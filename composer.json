@@ -1,0 +1,25 @@
+{
+  "autoload": {
+    "psr-4": {
+      "Pdsinterop\\Auth\\": "src/"
+    }
+  },
+  "config": {
+    "bin-dir": "./bin",
+    "platform": {
+      "php": "7.2",
+      "ext-json": "1",
+      "ext-mbstring": "1"
+    },
+    "sort-packages": true
+  },
+  "description": "OAuth2, OpenID and OIDC for Solid Server implementations.",
+  "license": "MIT",
+  "name": "pdsinterop/solid-auth",
+  "require": {
+    "php": ">=7.2",
+    "ext-json": "*",
+    "ext-mbstring": "*"
+  },
+  "type": "library"
+}
