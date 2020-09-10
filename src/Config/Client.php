@@ -4,24 +4,46 @@ namespace Pdsinterop\Solid\Auth\Config;
 
 class Client
 {
+    ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    /** @var string */
+    private $authorizationPageUrl;
     /** @var string */
     private $identifier;
     /** @var string */
+    private $loginUrl;
+    /** @var string */
     private $secret;
 
-    public function getIdentifier() : string
+    //////////////////////////// GETTERS AND SETTERS \\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    final public function getIdentifier() : string
     {
         return $this->identifier;
     }
 
-    public function getSecret() : string
+    final public function getSecret() : string
     {
         return $this->secret;
     }
 
-    final public function __construct(string $identifier, string $secret)
+    final public function getAuthorizationPageUrl() : string
     {
+        return $this->authorizationPageUrl;
+    }
+
+    final public function getLoginUrl() : string
+    {
+        return $this->loginUrl;
+    }
+
+    //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    final public function __construct(string $identifier, string $secret, string $authorizationPageUrl = '', string $loginUrl = '')
+    {
+        $this->authorizationPageUrl = $authorizationPageUrl;
         $this->identifier = $identifier;
+        $this->loginUrl = $loginUrl;
         $this->secret = $secret;
     }
 }
