@@ -17,6 +17,11 @@ class Server implements JsonSerializable
 
     //////////////////////////// GETTERS AND SETTERS \\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+    final public function get($key)
+    {
+        return $this->data[$key] ?: null;
+    }
+
     private function getRecommended() : array
     {
         return [
