@@ -1,5 +1,8 @@
 {
   "autoload": {
+    "files": [
+      "src/Exceptions.inc.php"
+    ],
     "psr-4": {
       "Pdsinterop\\Solid\\Auth\\": "src/"
     }
