@@ -46,11 +46,22 @@ enabled in order for this package to work.
 
 ## Usage
 
-The functionality provided by this package is exposed mostly through these classes:
+This package has responses to request for:
 
-    @TODO: Add required code block illustrating how to use
+- OAuth2 Token
+- OpenID Connect Authorization
+- Server configuration (usually made to `/.well-known/openid-configuration`) 
 
-- @TODO: List main classes
+The classes that provide this functionality work with any [PSR-7](http://www.php-fig.org/psr/psr-7/).
+compliant Request and Response objects.(i.e. classes that implement the 
+`Psr\Http\Message\ResponseInterface` and  `Psr\Http\Message\ServerRequestInterface`, respectively).
+
+This functionality is exposed by the `Pdsinterop\Solid\Auth\Server`, with the
+help of `League\OAuth2\Server\AuthorizationServer`.
+
+Besides a Request, Response and AuthorizationServer, the `Pdsinterop\Solid\Auth\Server` requires a Configuration and User object.
+
+A [full example](./tests/example.php) has been provided to help you understand how to integrate this library.
 
 See the "API" section for detailed usage examples.
 
