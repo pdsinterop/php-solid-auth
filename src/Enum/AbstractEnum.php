@@ -8,7 +8,7 @@ abstract class AbstractEnum
 {
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    private static $instance;
+    private static $instance = [];
 
     //////////////////////////// GETTERS AND SETTERS \\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -16,7 +16,7 @@ abstract class AbstractEnum
     {
         $classname = static::class;
 
-        if (self::$instance[$classname] === null) {
+        if (array_key_exists($classname, self::$instance) === false) {
             self::$instance[$classname] = new $classname;
         }
 
