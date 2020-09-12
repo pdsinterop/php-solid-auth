@@ -54,6 +54,12 @@ class Server implements JsonSerializable
 
     final public function __construct(array $data, bool $strict = false)
     {
+        $data = array_merge([
+            OidcMeta::ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED => ['RS256'],
+            OidcMeta::RESPONSE_TYPES_SUPPORTED => \Pdsinterop\Solid\Auth\Enum\OAuth2\ResponseType::CODE_ID_TOKEN_TOKEN,
+            OidcMeta::SUBJECT_TYPES_SUPPORTED =>  ['public'],
+        ], $data);
+
         $this->data = array_filter($data, [OidcMeta::class, 'has'], ARRAY_FILTER_USE_KEY);
         $this->strict = $strict;
     }

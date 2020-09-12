@@ -66,7 +66,7 @@ class ServerTest extends TestCase
     final public function testServerConfigShouldComplainWhenSerializedWithRequiredKeysMissing() : void
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Required properties have not been set: authorization_endpoint, id_token_signing_alg_values_supported, issuer, jwks_uri, response_types_supported, subject_types_supported');
+        $this->expectExceptionMessage('Required properties have not been set: authorization_endpoint, issuer, jwks_uri');
 
         $server = new Server([]);
 
@@ -75,8 +75,11 @@ class ServerTest extends TestCase
 
     final public function testServerConfigShouldReturnArrayWhenSerializedWithRequiredKeysPresent() : array
     {
-        $required = (new Server([]))->getRequired();
-        $data = array_combine($required, $required);
+        $data = [
+            OidcMeta::AUTHORIZATION_ENDPOINT => 'https://server/authorize',
+            OidcMeta::ISSUER => 'https://server/identifier',
+            OidcMeta::JWKS_URI => 'https://server/jwk'
+        ];
 
         $server = new Server($data);
 
@@ -93,12 +96,12 @@ class ServerTest extends TestCase
     final public function testServerConfigShouldReturnExpectedValuesWhenSerializedWithRequiredKeysPresent(array $actual)
     {
         self::assertEquals($actual,  [
-            'authorization_endpoint' => 'authorization_endpoint',
-            'id_token_signing_alg_values_supported' => 'id_token_signing_alg_values_supported',
-            'issuer' => 'issuer',
-            'jwks_uri' => 'jwks_uri',
-            'response_types_supported' => 'response_types_supported',
-            'subject_types_supported' => 'subject_types_supported',
+            'authorization_endpoint' => 'https://server/authorize',
+            'id_token_signing_alg_values_supported' => ['RS256'],
+            'issuer' => 'https://server/identifier',
+            'jwks_uri' => 'https://server/jwk',
+            'response_types_supported' => ['code', 'id_token', 'token'],
+            'subject_types_supported' => ['public'],
         ]);
     }
 }
