@@ -9,7 +9,7 @@ ob_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 
 /*/ The PSR Request and Response objects are usually provided by your framework /*/
-$request = Laminas\Diactoros\ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
+$request = \Laminas\Diactoros\ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
 $response = new \Laminas\Diactoros\Response();
 
 /*/ The User (ID) is usually also provided by an entity in your framework /*/
@@ -35,19 +35,19 @@ $keyPath = dirname(__DIR__) . '/tests/fixtures/keys';
 $encryptionKey = file_get_contents($keyPath . '/encryption.key');
 $privateKey = file_get_contents($keyPath . '/private.key');
 
-$config = (new Pdsinterop\Solid\Auth\Factory\ConfigFactory(
+$config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
     $clientIdentifier,
     $clientSecret,
     $encryptionKey,
-    $privateKey
+    $privateKey,
     [/* @FIXME: Server config keys go here */]
 ))->create();
 
-$authorizationServer = (new Pdsinterop\Solid\Auth\Factory\AuthorizationServerFactory($config))->create();
+$authorizationServer = (new \Pdsinterop\Solid\Auth\Factory\AuthorizationServerFactory($config))->create();
 
 $user = null;
 if ($userId !== '') {
-    $user = new Pdsinterop\Solid\Auth\Entity\User();
+    $user = new \Pdsinterop\Solid\Auth\Entity\User();
     $user->setIdentifier($userId);
 }
 
@@ -61,11 +61,11 @@ $server = new \Pdsinterop\Solid\Auth\Server($authorizationServer, $config, $resp
 switch ($request->getMethod() . $request->getUri()) {
     // @CHECKME: Do we also need 'GET/.well-known/oauth-authorization-server'?
     case 'GET/.well-known/openid-configuration':
-        $server->respondToWellKnowRequest();
+        $response = $server->respondToWellKnownRequest();
         break;
 
     case 'POST/access_token':
-        $server->respondToAccessTokenRequest($request);
+        $response = $server->respondToAccessTokenRequest($request);
         break;
 
     case 'GET/authorize':
