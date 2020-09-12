@@ -35,7 +35,7 @@ class RepositoryFactory
     {
         static $clientEntity;
 
-        if ($this->repositories[Repository::AUTH_CODE] === null) {
+        if (array_key_exists(Repository::AUTH_CODE, $this->repositories) === false) {
             $clientEntity = $this->createClientRepository()->createClientEntity();
         }
 
@@ -61,7 +61,7 @@ class RepositoryFactory
 
     private function createOnce(string $className, array $properties = []): RepositoryInterface
     {
-        if ($this->repositories[$className] === null) {
+        if (array_key_exists($className, $this->repositories) === false) {
             $this->repositories[$className] = $this->create($className, $properties);
         }
 
