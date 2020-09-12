@@ -6,8 +6,6 @@ use PHPUnit\Framework\TestCase;
 
 abstract class AbstractEnumTest extends TestCase
 {
-    public const TEST_VALUE = 'test';
-
     /** @var AbstractEnum */
     private $enum;
 
@@ -52,7 +50,7 @@ abstract class AbstractEnumTest extends TestCase
     final public function testEnumShouldReturnTrueWhenAskedForDeclaredEnum() : void
     {
         $enum = $this->enum;
-        $actual = $enum->hasValue(static::TEST_VALUE);
+        $actual = $enum->hasValue($this->getTestValue());
 
         self::assertTrue($actual);
     }
