@@ -32,7 +32,7 @@ class Server implements JsonSerializable
         ];
     }
 
-    private function getRequired() : array
+    final public function getRequired() : array
     {
         $required = [
             OidcMeta::AUTHORIZATION_ENDPOINT,
@@ -54,7 +54,7 @@ class Server implements JsonSerializable
 
     final public function __construct(array $data, bool $strict = false)
     {
-        $this->data = array_filter($data, [OidcMeta::class, 'has']);
+        $this->data = array_filter($data, [OidcMeta::class, 'has'], ARRAY_FILTER_USE_KEY);
         $this->strict = $strict;
     }
 
