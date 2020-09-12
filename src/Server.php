@@ -45,7 +45,7 @@ class Server
         }
     }
 
-    final public function respondToWellKnowRequest() : Response
+    final public function respondToWellKnownRequest() : Response
     {
         $response = $this->response;
 
