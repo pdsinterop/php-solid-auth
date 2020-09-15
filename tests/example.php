@@ -34,12 +34,14 @@ $clientRedirectUri = ['https://server/client/redirect-url'];
 $keyPath = dirname(__DIR__) . '/tests/fixtures/keys';
 $encryptionKey = file_get_contents($keyPath . '/encryption.key');
 $privateKey = file_get_contents($keyPath . '/private.key');
+$publicKey = file_get_contents($keyPath . '/public.key');
 
 $config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
     $clientIdentifier,
     $clientSecret,
     $encryptionKey,
     $privateKey,
+    $publicKey,
     [
         /* URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core]. */
         \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::AUTHORIZATION_ENDPOINT => 'https://server/authorize',
@@ -67,7 +69,7 @@ $config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
          * of keys provided. When used, the bare key values MUST still be
          * present and MUST match those in the certificate.
          */
-        \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::JWKS_URI => 'https://server/jwk'
+        \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::JWKS_URI => 'https://server/.well-known/jwks.json'
     ]
 ))->create();
 
@@ -175,6 +177,10 @@ switch ($request->getMethod() . $request->getRequestTarget()) {
         /*/
         $approval = null; // <-- Change this in this example to emulate a user approving (or denying) the request
         $response = $server->respondToAuthorizationRequest($request, $user, $approval, $callback);
+        break;
+
+    case 'GET/.well-known/jwks.json':
+        $response = $server->respondToJwksRequest();
         break;
 
     default:
