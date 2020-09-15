@@ -3,6 +3,7 @@
 namespace Pdsinterop\Solid\Auth\Config;
 
 use Defuse\Crypto\Key as CryptoKey;
+use Lcobucci\JWT\Signer\Key;
 use League\OAuth2\Server\CryptKey;
 
 class Keys
@@ -13,6 +14,8 @@ class Keys
     private $encryptionKey;
     /** @var CryptKey*/
     private $privateKey;
+    /** @var Key */
+    private $publicKey;
 
     //////////////////////////// GETTERS AND SETTERS \\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -28,6 +31,12 @@ class Keys
         return $this->privateKey;
     }
 
+    /*** @return Key */
+    public function getPublicKey() : Key
+    {
+        return $this->publicKey;
+    }
+
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     /**
@@ -36,10 +45,11 @@ class Keys
      * @param CryptKey $privateKey
      * @param string|CryptoKey $encryptionKey
      */
-    final public function __construct(CryptKey $privateKey, $encryptionKey)
+    final public function __construct(CryptKey $privateKey, Key $publicKey, $encryptionKey)
     {
         // @FIXME: Add type-check for $encryptionKey (or an extending class with different parameter type?)
         $this->encryptionKey = $encryptionKey;
         $this->privateKey = $privateKey;
+        $this->publicKey = $publicKey;
     }
 }

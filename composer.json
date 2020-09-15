@@ -39,5 +39,13 @@
     "lcobucci/jwt": "^3.3",
     "phpunit/phpunit": "^8.5"
   },
+  "scripts": {
+    "tests:example": "php -S localhost:8080 -t ./tests/ ./tests/example.php",
+    "tests:unit": "phpunit ./tests/unit"
+  },
+  "scripts-descriptions": {
+    "tests:example": "Run internal PHP development server with example code",
+    "tests:unit": "Run unit-test with PHPUnit"
+  },
   "type": "library"
 }

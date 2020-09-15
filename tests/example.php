@@ -34,12 +34,14 @@ $clientRedirectUri = ['https://server/client/redirect-url'];
 $keyPath = dirname(__DIR__) . '/tests/fixtures/keys';
 $encryptionKey = file_get_contents($keyPath . '/encryption.key');
 $privateKey = file_get_contents($keyPath . '/private.key');
+$publicKey = file_get_contents($keyPath . '/public.key');
 
 $config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
     $clientIdentifier,
     $clientSecret,
     $encryptionKey,
     $privateKey,
+    $publicKey,
     [
         /* URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core]. */
         \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::AUTHORIZATION_ENDPOINT => 'https://server/authorize',
@@ -67,7 +69,7 @@ $config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
          * of keys provided. When used, the bare key values MUST still be
          * present and MUST match those in the certificate.
          */
-        \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::JWKS_URI => 'https://server/jwk'
+        \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::JWKS_URI => 'https://server/.well-known/jwks.json'
     ]
 ))->create();
 
@@ -86,7 +88,7 @@ $server = new \Pdsinterop\Solid\Auth\Server($authorizationServer, $config, $resp
 // =============================================================================
 // Handle requests
 // -----------------------------------------------------------------------------
-switch ($request->getMethod() . $request->getUri()) {
+switch ($request->getMethod() . $request->getRequestTarget()) {
     // @CHECKME: Do we also need 'GET/.well-known/oauth-authorization-server'?
     case 'GET/.well-known/openid-configuration':
         $response = $server->respondToWellKnownRequest();
@@ -177,7 +179,12 @@ switch ($request->getMethod() . $request->getUri()) {
         $response = $server->respondToAuthorizationRequest($request, $user, $approval, $callback);
         break;
 
+    case 'GET/.well-known/jwks.json':
+        $response = $server->respondToJwksRequest();
+        break;
+
     default:
+        $response->getBody()->write('404');
         $response = $response->withStatus(404);
         break;
 }
@@ -193,6 +200,6 @@ foreach ($response->getHeaders() as $name => $values) {
     }
 }
 
-echo $response->getBody()->getContents();
+echo (string)  $response->getBody();
 exit;
 // =============================================================================
