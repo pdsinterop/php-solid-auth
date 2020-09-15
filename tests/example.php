@@ -86,7 +86,7 @@ $server = new \Pdsinterop\Solid\Auth\Server($authorizationServer, $config, $resp
 // =============================================================================
 // Handle requests
 // -----------------------------------------------------------------------------
-switch ($request->getMethod() . $request->getUri()) {
+switch ($request->getMethod() . $request->getRequestTarget()) {
     // @CHECKME: Do we also need 'GET/.well-known/oauth-authorization-server'?
     case 'GET/.well-known/openid-configuration':
         $response = $server->respondToWellKnownRequest();
@@ -178,6 +178,7 @@ switch ($request->getMethod() . $request->getUri()) {
         break;
 
     default:
+        $response->getBody()->write('404');
         $response = $response->withStatus(404);
         break;
 }
@@ -193,6 +194,6 @@ foreach ($response->getHeaders() as $name => $values) {
     }
 }
 
-echo $response->getBody()->getContents();
+echo (string)  $response->getBody();
 exit;
 // =============================================================================
