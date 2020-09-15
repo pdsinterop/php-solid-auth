@@ -2,6 +2,7 @@
 
 namespace Pdsinterop\Solid\Auth\Factory;
 
+use Lcobucci\JWT\Signer\Key;
 use League\OAuth2\Server\CryptKey;
 use Pdsinterop\Solid\Auth\Config;
 use Pdsinterop\Solid\Auth\Enum\OAuth2\GrantType;
@@ -17,6 +18,8 @@ class ConfigFactory
     private $encryptionKey;
     /** @var string */
     private $privateKey;
+    /** @var string */
+    private $publicKey;
     /** @var array */
     private $serverConfig;
 
@@ -25,6 +28,7 @@ class ConfigFactory
         string $clientSecret,
         string $encryptionKey,
         string $privateKey,
+        string $publicKey,
         array $serverConfig
     ) {
         $this->clientIdentifier = $clientIdentifier;
@@ -32,6 +36,7 @@ class ConfigFactory
         $this->encryptionKey = $encryptionKey;
         $this->privateKey = $privateKey;
         $this->serverConfig = $serverConfig;
+        $this->publicKey = $publicKey;
     }
 
     final public function create() : Config
@@ -40,6 +45,7 @@ class ConfigFactory
         $clientSecret = $this->clientSecret;
         $encryptionKey = $this->encryptionKey;
         $privateKey = $this->privateKey;
+        $publicKey = $this->publicKey;
 
         $client = new Config\Client($clientIdentifier, $clientSecret);
 
@@ -53,6 +59,7 @@ class ConfigFactory
 
         $keys = new Config\Keys(
             new CryptKey($privateKey),
+            new Key($publicKey),
             $encryptionKey
         );
 
