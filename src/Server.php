@@ -7,6 +7,7 @@ use League\OAuth2\Server\Entities\UserEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Pdsinterop\Solid\Auth\Entity\User;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
+use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -52,6 +53,16 @@ class Server
         $serverConfig = $this->config->getServer();
 
         return $this->createJsonResponse($response, $serverConfig);
+    }
+
+    final public function respondToJwksRequest(/*Jwks $jwks*/) : Response
+    {
+        $response = $this->response;
+        $key = $this->config->getKeys()->getPublicKey();
+
+        $jwks = new Jwks($key);
+
+        return $this->createJsonResponse($response, $jwks);
     }
 
     final public function respondToAuthorizationRequest(
