@@ -7,11 +7,11 @@ class Client
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     /** @var string */
-    private $authorizationPageUrl;
-    /** @var string */
     private $identifier;
     /** @var string */
-    private $loginUrl;
+    private $name;
+    /** @var array */
+    private $redirectUris;
     /** @var string */
     private $secret;
 
@@ -22,28 +22,32 @@ class Client
         return $this->identifier;
     }
 
+    final public function getName() : string
+    {
+        return $this->name;
+    }
+
+    final public function getRedirectUris() : array
+    {
+        return $this->redirectUris;
+    }
+
     final public function getSecret() : string
     {
         return $this->secret;
     }
 
-    final public function getAuthorizationPageUrl() : string
-    {
-        return $this->authorizationPageUrl;
-    }
-
-    final public function getLoginUrl() : string
-    {
-        return $this->loginUrl;
-    }
-
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    final public function __construct(string $identifier, string $secret, string $authorizationPageUrl = '', string $loginUrl = '')
-    {
-        $this->authorizationPageUrl = $authorizationPageUrl;
+    final public function __construct(
+        string $identifier,
+        string $secret,
+        array $redirectUris,
+        string $name = ''
+    ) {
         $this->identifier = $identifier;
-        $this->loginUrl = $loginUrl;
+        $this->name = $name;
+        $this->redirectUris = $redirectUris;
         $this->secret = $secret;
     }
 }

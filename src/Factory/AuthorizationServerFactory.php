@@ -25,14 +25,19 @@ class AuthorizationServerFactory
     {
         $config = $this->config;
 
-        $clientIdentifier = $config->getClient()->getIdentifier();
-        $clientSecret = $config->getClient()->getSecret();
+        $client = $config->getClient();
         $expiration = $config->getExpiration();
         $grantTypes = $config->getGrantTypes();
         $keys = $config->getKeys();
 
         $repositoryFactory = new RepositoryFactory([
-            Repository::CLIENT => new Client($clientIdentifier, $clientSecret, '',$grantTypes, []),
+            Repository::CLIENT => new Client(
+                $client->getIdentifier(),
+                $client->getSecret(),
+                $client->getName(),
+                $grantTypes,
+                $client->getRedirectUris()
+            ),
         ]);
 
         $server = new AuthorizationServer(

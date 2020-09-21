@@ -10,10 +10,8 @@ use Pdsinterop\Solid\Auth\Enum\Time;
 
 class ConfigFactory
 {
-    /** @var string */
-    private $clientIdentifier;
-    /** @var string */
-    private $clientSecret;
+    /** @var Config\Client */
+    private $client;
     /** @var string */
     private $encryptionKey;
     /** @var string */
@@ -24,15 +22,13 @@ class ConfigFactory
     private $serverConfig;
 
     final public function __construct(
-        string $clientIdentifier,
-        string $clientSecret,
+        Config\Client $client,
         string $encryptionKey,
         string $privateKey,
         string $publicKey,
         array $serverConfig
     ) {
-        $this->clientIdentifier = $clientIdentifier;
-        $this->clientSecret = $clientSecret;
+        $this->client = $client;
         $this->encryptionKey = $encryptionKey;
         $this->privateKey = $privateKey;
         $this->serverConfig = $serverConfig;
@@ -41,13 +37,10 @@ class ConfigFactory
 
     final public function create() : Config
     {
-        $clientIdentifier = $this->clientIdentifier;
-        $clientSecret = $this->clientSecret;
+        $client = $this->client;
         $encryptionKey = $this->encryptionKey;
         $privateKey = $this->privateKey;
         $publicKey = $this->publicKey;
-
-        $client = new Config\Client($clientIdentifier, $clientSecret);
 
         $expiration = new Config\Expiration(Time::HOURS_1, Time::MINUTES_10, Time::MONTHS_1);
 
