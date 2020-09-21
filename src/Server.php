@@ -46,23 +46,15 @@ class Server
         }
     }
 
-    final public function respondToWellKnownRequest() : Response
-    {
-        $response = $this->response;
-
-        $serverConfig = $this->config->getServer();
-
-        return $this->createJsonResponse($response, $serverConfig);
-    }
-
-    final public function respondToJwksRequest(/*Jwks $jwks*/) : Response
-    {
-        $response = $this->response;
-        $key = $this->config->getKeys()->getPublicKey();
-
-        $jwks = new Jwks($key);
-
-        return $this->createJsonResponse($response, $jwks);
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     *
+     * @see https://openid.net/specs/openid-connect-registration-1_0.html
+     */
+    final public function respondToDynamicClientRegistrationRequest(Request $request): Response {
+        return $this->response->withStatus(501);
     }
 
     final public function respondToAuthorizationRequest(
@@ -116,6 +108,27 @@ class Server
 
         return $response;
     }
+
+    final public function respondToJwksMetadataRequest(/*Jwks $jwks*/) : Response
+    {
+        $response = $this->response;
+        $key = $this->config->getKeys()->getPublicKey();
+
+        $jwks = new Jwks($key);
+
+        return $this->createJsonResponse($response, $jwks);
+    }
+
+    final public function respondToOpenIdMetadataRequest() : Response
+    {
+        $response = $this->response;
+
+        $serverConfig = $this->config->getServer();
+
+        return $this->createJsonResponse($response, $serverConfig);
+    }
+
+    final public function respondTo_Request(): Response {}
 
     ////////////////////////////// UTILITY METHODS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 

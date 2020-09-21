@@ -89,9 +89,13 @@ $server = new \Pdsinterop\Solid\Auth\Server($authorizationServer, $config, $resp
 // Handle requests
 // -----------------------------------------------------------------------------
 switch ($request->getMethod() . $request->getRequestTarget()) {
+    case 'GET/.well-known/jwks.json':
+        $response = $server->respondToJwksMetadataRequest();
+        break;
+
     // @CHECKME: Do we also need 'GET/.well-known/oauth-authorization-server'?
     case 'GET/.well-known/openid-configuration':
-        $response = $server->respondToWellKnownRequest();
+        $response = $server->respondToOpenIdMetadataRequest();
         break;
 
     case 'POST/access_token':
