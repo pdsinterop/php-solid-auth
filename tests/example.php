@@ -21,10 +21,17 @@ $clientIdentifier = \array_key_exists(\Pdsinterop\Solid\Auth\Enum\OAuth2\Paramet
     ? $request->getQueryParams()[\Pdsinterop\Solid\Auth\Enum\OAuth2\Parameter::CLIENT_ID]
     : '';
 
-/*/ These should come from a database, based on $clientIdentifier /*/
+/*/ These should come from a database, based on $clientIdentifier
+ *
+ * They have previously been provided to or by the Client, using a Dynamic
+ * Registration request.
+/*/
+$clientName = 'Example Client Name';
+$clientRedirectUris = [
+    'https://server/client/redirect-url',
+    'https://server/client/another-redirect-url',
+];
 $clientSecret = 'client secret';
-$clientName = '';
-$clientRedirectUri = ['https://server/client/redirect-url'];
 // =============================================================================
 
 
@@ -37,11 +44,13 @@ $privateKey = file_get_contents($keyPath . '/private.key');
 $publicKey = file_get_contents($keyPath . '/public.key');
 
 $config = (new \Pdsinterop\Solid\Auth\Factory\ConfigFactory(
-    $clientIdentifier,
-    $clientSecret,
-    $encryptionKey,
-    $privateKey,
-    $publicKey,
+    new \Pdsinterop\Solid\Auth\Config\Client(
+        $clientIdentifier,
+        $clientSecret,
+        $clientRedirectUris,
+        $clientName
+    ),
+    $encryptionKey,$privateKey, $publicKey,
     [
         /* URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core]. */
         \Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata::AUTHORIZATION_ENDPOINT => 'https://server/authorize',
