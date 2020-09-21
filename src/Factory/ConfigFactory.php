@@ -47,6 +47,7 @@ class ConfigFactory
         $grantTypes = [
             GrantType::AUTH_CODE,
             GrantType::CLIENT_CREDENTIALS,
+            GrantType::IMPLICIT,
             GrantType::REFRESH_TOKEN,
         ];
 
