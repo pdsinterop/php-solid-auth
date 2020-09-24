@@ -1,7 +1,7 @@
 <?php
 
 // =============================================================================
-// This majority of this part of the code is usually handled by your framework
+// The majority of this part of the code is usually handled by your framework
 // -----------------------------------------------------------------------------
 session_start();
 ob_start();
@@ -36,7 +36,7 @@ $clientSecret = 'client secret';
 
 
 // =============================================================================
-// Create the Authorization Server provided by the PDS Interop package
+// Create the Authorization Server
 // -----------------------------------------------------------------------------
 $keyPath = dirname(__DIR__) . '/tests/fixtures/keys';
 $encryptionKey = file_get_contents($keyPath . '/encryption.key');
