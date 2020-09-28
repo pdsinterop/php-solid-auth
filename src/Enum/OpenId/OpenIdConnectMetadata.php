@@ -204,4 +204,9 @@ class OpenIdConnectMetadata extends AbstractEnum
      * JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT]. The value none MAY be included.
      */
     public const USERINFO_SIGNING_ALG_VALUES_SUPPORTED = 'userinfo_signing_alg_values_supported';
+	
+	/* FIXME: Solid types here */
+	public const TOKEN_TYPES_SUPPORTED = 'token_types_supported';
+	public const CHECK_SESSION_IFRAME = 'check_session_iframe';
+	public const END_SESSION_ENDPOINT = 'end_session_endpoint';
 }
