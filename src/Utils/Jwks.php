@@ -47,6 +47,7 @@ class Jwks implements JsonSerializable
             JwkParameter::KEY_TYPE => 'RSA',
             RsaParameter::PUBLIC_EXPONENT => 'AQAB', // Hard-coded as `Base64Url::encode($keyInfo['rsa']['e'])` tends to be empty...
             RsaParameter::PUBLIC_MODULUS => Base64Url::encode($subject),
+            JwkParameter::KEY_OPERATIONS => array("verify"),
         ];
     }
 

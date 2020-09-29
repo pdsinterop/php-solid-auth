@@ -25,7 +25,13 @@ class AccessToken implements AccessTokenRepositoryInterface
         array $scopes,
         $userIdentifier = null
     ) : AccessTokenEntityInterface {
-        return new AccessTokenEntity($clientEntity);
+
+		$accessToken = new AccessTokenEntity($clientEntity);
+		$accessToken->setUserIdentifier($userIdentifier);
+		foreach ($scopes as $scope) {
+			$accessToken->addScope(new \Pdsinterop\Solid\Auth\Entity\Scope($scope));
+		}
+		return $accessToken;
     }
 
     /**

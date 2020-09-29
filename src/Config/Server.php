@@ -56,9 +56,21 @@ class Server implements JsonSerializable
     {
         $data = array_merge([
             OidcMeta::ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED => ['RS256'],
-            OidcMeta::RESPONSE_TYPES_SUPPORTED => \Pdsinterop\Solid\Auth\Enum\OAuth2\ResponseType::CODE_ID_TOKEN_TOKEN,
             OidcMeta::SUBJECT_TYPES_SUPPORTED =>  ['public'],
-        ], $data);
+			OidcMeta::RESPONSE_TYPES_SUPPORTED => array("code","code token","code id_token","id_token code","id_token","id_token token","code id_token token","none"),
+			OidcMeta::TOKEN_TYPES_SUPPORTED => array("legacyPop","dpop"),
+			OidcMeta::RESPONSE_MODES_SUPPORTED => array("query","fragment"),
+			OidcMeta::GRANT_TYPES_SUPPORTED => array("authorization_code","implicit","refresh_token","client_credentials"),
+			OidcMeta::TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED => "client_secret_basic",
+			OidcMeta::TOKEN_ENDPOINT_AUTH_SIGNING_ALG_VALUES_SUPPORTED => ["RS256"],
+			OidcMeta::DISPLAY_VALUES_SUPPORTED => [],
+			OidcMeta::CLAIM_TYPES_SUPPORTED => ["normal"],
+			OidcMeta::CLAIMS_SUPPORTED => [],
+			OidcMeta::CLAIMS_PARAMETER_SUPPORTED => false,
+			OidcMeta::REQUEST_PARAMETER_SUPPORTED => true,
+			OidcMeta::REQUEST_URI_PARAMETER_SUPPORTED => false,
+			OidcMeta::REQUIRE_REQUEST_URI_REGISTRATION => false
+		], $data);
 
         $this->data = array_filter($data, [OidcMeta::class, 'has'], ARRAY_FILTER_USE_KEY);
         $this->strict = $strict;

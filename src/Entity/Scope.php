@@ -10,4 +10,8 @@ class Scope implements ScopeEntityInterface
 {
     use EntityTrait;
     use ScopeTrait;
+	
+	public function getIdentifier() {
+		return "openid";
+	}
 }

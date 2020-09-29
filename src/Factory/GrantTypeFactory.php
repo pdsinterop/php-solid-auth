@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\Grant\ClientCredentialsGrant;
 use League\OAuth2\Server\Grant\GrantTypeInterface;
+use League\OAuth2\Server\Grant\ImplicitGrant;
 use League\OAuth2\Server\Grant\RefreshTokenGrant;
 use Pdsinterop\Solid\Auth\Config\Expiration;
 use Pdsinterop\Solid\Auth\Enum\OAuth2\GrantType;
@@ -52,6 +53,10 @@ class GrantTypeFactory
                 $grant = $this->createClientCredentialsGrant();
                 break;
 
+            case GrantType::IMPLICIT:
+                $grant = $this->createImplicitGrant($expiration->forAccessToken());
+                break;
+
             case GrantType::REFRESH_TOKEN:
                 $grant = $this->createRefreshTokenGrant($factory);
                 break;
@@ -86,6 +91,11 @@ class GrantTypeFactory
             $factory->createRefreshTokenRepository(),
             $expiration
         );
+    }
+
+    private function createImplicitGrant(DateInterval $expiration) : ImplicitGrant
+    {
+        return new ImplicitGrant($expiration);
     }
 
     private function createRefreshTokenGrant(RepositoryFactory $factory) : RefreshTokenGrant
