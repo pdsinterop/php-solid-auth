@@ -33,7 +33,6 @@ class TokenGenerator
 			->set("sub", $clientId)
 			->sign($signer, $keychain->getPrivateKey($privateKey))
 			->getToken();
-		$result = $token->__toString();
 		return $token->__toString();
 	}
 		
@@ -65,8 +64,7 @@ class TokenGenerator
 			->withHeader('kid', $jwks['keys'][0]['kid'])
 			->sign($signer, $keychain->getPrivateKey($privateKey))
 			->getToken();
-		$result = $token->__toString();
-		return $result;
+		return $token->__toString();
 	}
 	
 	public function respondToRegistration($registration, $privateKey) {
@@ -88,8 +86,7 @@ class TokenGenerator
 			'registration_access_token' => $registration_access_token,
 		);
 		
-		$registration = array_merge($registrationBase, $registration);
-		return $registration;
+		return array_merge($registrationBase, $registration);
 	}
 	
 	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey) {
