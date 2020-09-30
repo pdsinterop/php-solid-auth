@@ -111,7 +111,7 @@ class TokenGenerator
 					$privateKey
 				);
 				$value = preg_replace("/code=(.*?)&/", "code=\$1&id_token=$idToken&", $value);
-				$response = $response->withHeader("Location", value);				
+				$response = $response->withHeader("Location", $value);
 			}
 		}
 		return $response;
