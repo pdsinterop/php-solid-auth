@@ -4,6 +4,7 @@ namespace Pdsinterop\Solid\Auth;
 
 use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
+use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
 
 class TokenGenerator
 {
@@ -90,8 +91,9 @@ class TokenGenerator
 	}
 	
 	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey) {
-			if ($response->hasHeader("Location")) {
+		if ($response->hasHeader("Location")) {
 			$value = $response->getHeaderLine("Location");
+
 			if (preg_match("/#access_token=(.*?)&/", $value, $matches)) {
 				$idToken = $this->generateIdToken(
 					$matches[1],
@@ -112,6 +114,24 @@ class TokenGenerator
 				);
 				$value = preg_replace("/code=(.*?)&/", "code=\$1&id_token=$idToken&", $value);
 				$response = $response->withHeader("Location", $value);
+			}
+		} else {
+			$response->getBody()->rewind();
+			$responseBody = $response->getBody()->getContents();
+			try {
+				$body = json_decode($responseBody, true);
+				if (isset($body['access_token'])) {
+					$body['id_token'] = $this->generateIdToken(
+						$body['access_token'],
+						$clientId,
+						$subject,
+						$nonce,
+						$privateKey
+					);
+					return new JsonResponse($body);
+				}
+			} catch (\Exception $e) {
+				// leave the response as it was;
 			}
 		}
 		return $response;
