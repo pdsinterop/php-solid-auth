@@ -141,7 +141,7 @@ class TokenGenerator
 	}
 
 	public function getCodeInfo($code) {
-		return json_decode($this->decrypt($code));
+		return json_decode($this->decrypt($code), true);
 	}
 	///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
