@@ -5,9 +5,11 @@ namespace Pdsinterop\Solid\Auth;
 use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
+use League\OAuth2\Server\CryptTrait;
 
 class TokenGenerator
 {
+    use CryptTrait;
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     /** @var Config */
@@ -19,6 +21,7 @@ class TokenGenerator
         Config $config
     ) {
         $this->config = $config;
+        $this->setEncryptionKey($this->config->getKeys()->getEncryptionKey());
     }
 	
 	public function generateRegistrationAccessToken($clientId, $privateKey) {
@@ -135,6 +138,10 @@ class TokenGenerator
 			}
 		}
 		return $response;
+	}
+
+	public function getCodeInfo($code) {
+		return json_decode($this->decrypt($code), true);
 	}
 	///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
