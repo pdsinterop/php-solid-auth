@@ -40,7 +40,7 @@ class TokenGenerator
 		return $token->__toString();
 	}
 		
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey) {
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
         $jwks = $this->getJwks();
@@ -63,7 +63,8 @@ class TokenGenerator
 			->set("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
 			->set("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
 			->set("cnf", array(
-				"jwk" => $jwks['keys'][0]
+				"jkt" => $dpopKey,
+			//	"jwk" => $jwks['keys'][0]
 			))
 			->withHeader('kid', $jwks['keys'][0]['kid'])
 			->sign($signer, $keychain->getPrivateKey($privateKey))
@@ -93,7 +94,7 @@ class TokenGenerator
 		return array_merge($registrationBase, $registration);
 	}
 	
-	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey) {
+	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
 		if ($response->hasHeader("Location")) {
 			$value = $response->getHeaderLine("Location");
 
@@ -103,7 +104,8 @@ class TokenGenerator
 					$clientId,
 					$subject,
 					$nonce,
-					$privateKey
+					$privateKey,
+					$dpopKey
 				);
 				$value = preg_replace("/#access_token=(.*?)&/", "#access_token=\$1&id_token=$idToken&", $value);				
 				$response = $response->withHeader("Location", $value);
@@ -113,7 +115,8 @@ class TokenGenerator
 					$clientId,
 					$subject,
 					$nonce,
-					$privateKey
+					$privateKey,
+					$dpopKey
 				);
 				$value = preg_replace("/code=(.*?)&/", "code=\$1&id_token=$idToken&", $value);
 				$response = $response->withHeader("Location", $value);
@@ -129,8 +132,11 @@ class TokenGenerator
 						$clientId,
 						$subject,
 						$nonce,
-						$privateKey
+						$privateKey,
+						$dpopKey
 					);
+
+					$body['access_token'] = $body['id_token'];
 					return new JsonResponse($body);
 				}
 			} catch (\Exception $e) {
