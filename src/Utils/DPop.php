@@ -16,7 +16,7 @@ class DPop {
 			if ($dpop) {
 				$dpopKey = $this->getDpopKey($dpop, $request);
 				if (!$this->validateJwtDpop($jwt, $dpopKey)) {
-					throw new Exception("Invalid token");
+					throw new \Exception("Invalid token");
 				}
 			}
 		}
@@ -100,7 +100,7 @@ class DPop {
 		//error_log("3");
 		// 3.  the "typ" field in the header has the value "dpop+jwt",
 		if ($typ != "dpop+jwt") {
-			throw new Exception("typ is not dpop+jwt");
+			throw new \Exception("typ is not dpop+jwt");
 		}
 
 		//error_log("4");
@@ -108,10 +108,10 @@ class DPop {
 		//	   digital signature algorithm, is not "none", is supported by the
 		//	   application, and is deemed secure,   
 		if ($alg == "none") {
-			throw new Exception("alg is none");
+			throw new \Exception("alg is none");
 		}
 		if ($alg != "RS256") {
-			throw new Exception("alg is not supported");
+			throw new \Exception("alg is not supported");
 		}
 		
 		//error_log("5");
@@ -123,14 +123,14 @@ class DPop {
 		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
 		$key = new \Lcobucci\JWT\Signer\Key($pem);
 		if (!$dpop->verify($signer, $key)) {
-			throw new Exception("invalid signature");
+			throw new \Exception("invalid signature");
 		}
 		
 		//error_log("6");
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
 		//	   in which the JWT was received (case-insensitive),
 		if (strtolower($htm) != strtolower($request->getMethod())) {
-			throw new Exception("htm http method is invalid");
+			throw new \Exception("htm http method is invalid");
 		}
 
 		//error_log("7");
@@ -142,11 +142,15 @@ class DPop {
 		// FIXME: Remove this; it was disabled for testing with a server running on 443 internally but accessible on :444
 		$htu = str_replace(":444", "", $htu);
 		$requestedPath = str_replace(":444", "", $requestedPath);
+		$htu = str_replace("http://", "https://", $htu);
+		$requestedPath = str_replace("http://", "https://", $requestedPath);
+
 		//error_log("REQUESTED HTU $htu");
 		//error_log("REQUESTED PATH $requestedPath");
-		if ($htu != $requestedPath) { 
-			throw new Exception("htu does not match requested path");
-		}
+		// FIXME: Restore this check
+//		if ($htu != $requestedPath) { 
+//			throw new \Exception("htu does not match requested path");
+//		}
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
