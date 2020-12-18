@@ -137,20 +137,17 @@ class DPop {
 		// 7.  the "htu" claims matches the HTTP URI value for the HTTP request
 		//     in which the JWT was received, ignoring any query and fragment
 		// 	   parts,
-		$requestedPath = $request->getServerParams()['REQUEST_SCHEME'] . "://" . $request->getServerParams()['SERVER_NAME'] . $request->getRequestTarget();
+		$requestedPath = (string)$request->getUri();
 		$requestedPath = preg_replace("/[?#].*$/", "", $requestedPath);
 		// FIXME: Remove this; it was disabled for testing with a server running on 443 internally but accessible on :444
 		$htu = str_replace(":444", "", $htu);
 		$requestedPath = str_replace(":444", "", $requestedPath);
-		$htu = str_replace("http://", "https://", $htu);
-		$requestedPath = str_replace("http://", "https://", $requestedPath);
 
 		//error_log("REQUESTED HTU $htu");
 		//error_log("REQUESTED PATH $requestedPath");
-		// FIXME: Restore this check
-//		if ($htu != $requestedPath) { 
-//			throw new \Exception("htu does not match requested path");
-//		}
+		if ($htu != $requestedPath) { 
+			throw new \Exception("htu does not match requested path");
+		}
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
