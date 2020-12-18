@@ -6,14 +6,28 @@ use Pdsinterop\Rdf\Enum\Format as Format;
 
 class WAC {
 	private $filesystem;
-	
+	private $baseUrl;
+	private $basePath;
+
 	public function __construct($filesystem) {
 		$this->filesystem = $filesystem;
+		$this->baseUrl = '';
+		$this->basePath = '';
 	}
 	
+	public function setBaseUrl($url) {
+		$this->baseUrl = $url;
+		$serverRequest = new \Laminas\Diactoros\ServerRequest(array(),array(), $url);
+		$this->basePath = $serverRequest->getUri()->getPath();
+	}
+
 	public function addWACHeaders($request, $response, $webId) {
-		$userGrants = $this->getWACGrants($this->getUserGrants($request->getUri()->getPath(), $webId), $request->getUri());
-		$publicGrants = $this->getWACGrants($this->getPublicGrants($request->getUri()->getPath()), $request->getUri());
+		$path = $request->getUri()->getPath();
+		if ($this->basePath) {
+			$path = str_replace($this->basePath, '', $path);
+		}
+		$userGrants = $this->getWACGrants($this->getUserGrants($path, $webId), $request->getUri());
+		$publicGrants = $this->getWACGrants($this->getPublicGrants($path), $request->getUri());
 
 		$wacHeaders = array();
 		if ($userGrants) {
@@ -53,9 +67,14 @@ class WAC {
 			return true;
 		}
 		
-		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
-		$grants = $this->getUserGrants($uri->getPath(), $webId);
-		// error_log("GRANTED GRANTS for $webId: " . json_encode($grants));
+		$path = $uri->getPath();
+		if ($this->basePath) {
+			$path = str_replace($this->basePath, '', $path);
+		}
+
+		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
+		$grants = $this->getUserGrants($path, $webId);
+		//error_log("GRANTED GRANTS for $webId: " . json_encode($grants));
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
 				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
@@ -156,6 +175,9 @@ class WAC {
 	public function getRequestedGrants($request) {
 		$method = strtoupper($request->getMethod());
 		$path = $request->getUri()->getPath();
+		if ($this->basePath) {
+			$path = str_replace($this->basePath, '', $path);
+		}
 
 		switch ($method) {
 			case "GET":
@@ -244,7 +266,7 @@ class WAC {
 		}
 
 		$parentPath = dirname($path) . '/';
-		if ($this->filesystem->has($parentPath)) {
+		if ($this->filesystem->has(str_replace($this->basePath, '', $parentPath))) {
 			return $uri->withPath($parentPath);
 		} else {
 			return $this->getParentUri($uri->withPath($parentPath));
