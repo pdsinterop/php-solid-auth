@@ -4,6 +4,7 @@ namespace Pdsinterop\Solid\Auth\Utils;
 
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\ValidationData;
 use CoderCat\JWKToPEM\JWKConverter;
 
 class DPop {
@@ -151,9 +152,11 @@ class DPop {
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
-		// $iat = $dpop->getClaim("iat"); // FIXME: Is it correct that this was already verified by the parser?
-		// $exp = $dpop->getClaim("exp"); // FIXME: Is it correct that this was already verified by the parser?
-		
+		$validationData = new ValidationData(); // It will use the current time to validate (iat, nbf and exp)
+		if (!$dpop->validate($validationData)) {
+			throw new \Exception("token timing is invalid");
+		}
+
 		// 9.  that, within a reasonable consideration of accuracy and resource utilization, a JWT with the same "jti" value has not been received previously (see Section 9.1).
 		// FIXME: Check if we know the jti;
 		//error_log("9");
