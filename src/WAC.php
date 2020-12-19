@@ -179,6 +179,15 @@ class WAC {
 			$path = str_replace($this->basePath, '', $path);
 		}
 
+		// Special case: restrict access to all .acl files.
+		// Control is needed to do anything with them,
+		// having Control allows all operations.
+		if (preg_match('/.acl$/', $path)) {
+			return array(
+				"resource" => array('http://www.w3.org/ns/auth/acl#Control')
+			);
+		}
+
 		switch ($method) {
 			case "GET":
 			case "HEAD":
