@@ -75,9 +75,9 @@ class WAC {
 			$path = str_replace($this->basePath, '', $path);
 		}
 
-		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
+		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
 		$grants = $this->getUserGrants($path, $webId);
-		//error_log("GRANTED GRANTS for $webId: " . json_encode($grants));
+		// error_log("GRANTED GRANTS for $webId: " . json_encode($grants));
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
 				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
@@ -132,7 +132,7 @@ class WAC {
 		$acl = $this->filesystem->read($aclPath);
 
 		$graph = new \EasyRdf_Graph();
-		$graph->parse($acl, Format::TURTLE, $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['SERVER_NAME']);
+		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 		
 		// error_log("GET GRANTS for $webId");
 
@@ -172,7 +172,7 @@ class WAC {
 		$acl = $this->filesystem->read($aclPath);
 
 		$graph = new \EasyRdf_Graph();
-		$graph->parse($acl, Format::TURTLE, $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['SERVER_NAME']);
+		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 
 		// error_log("GET GRANTS for $origin");
 
@@ -205,17 +205,18 @@ class WAC {
 	}
 
 	private function getAclPath($path) {
+		$path = $this->normalizePath($path);
 		// get the filename from the request
 		$filename = basename($path);
 		$path = dirname($path);
 		
-		//error_log("REQUESTED PATH: $path");
-		//error_log("REQUESTED FILE: $filename");
+		error_log("REQUESTED PATH: $path");
+		error_log("REQUESTED FILE: $filename");
 
 		$aclOptions = array(
-			$path.'/'.$filename.'.acl',
-			$path.'/'.$filename.'/.acl',
-			$path.'/.acl'
+			$this->normalizePath($path.'/'.$filename.'.acl'),
+			$this->normalizePath($path.'/'.$filename.'/.acl'),
+			$this->normalizePath($path.'/.acl'),
 		);
 
 		foreach ($aclOptions as $aclPath) {
@@ -231,7 +232,9 @@ class WAC {
 		// check for acl:default predicate, if not found, continue searching up the directory tree
 		return $this->getParentAcl($path);
 	}
-
+	private function normalizePath($path) {
+		return preg_replace("|//|", "/", $path);
+	}
 	private function getParentAcl($path) {
 		//error_log("GET PARENT ACL $path");
 		if ($this->filesystem->has($path.'/.acl')) {
@@ -375,6 +378,9 @@ class WAC {
 		return strtolower(explode("#", $grant)[1]); // http://www.w3.org/ns/auth/acl#Read => read
 	}
 
+	private function getAclBase($aclPath) {
+		return $this->baseUrl . $this->normalizePath(dirname($aclPath) . "/");
+	}
 	private function getPublicGrants($resourcePath) {
 		$aclPath = $this->getAclPath($resourcePath);
 		if (!$aclPath) {
@@ -384,7 +390,9 @@ class WAC {
 		$acl = $this->filesystem->read($aclPath);
 
 		$graph = new \EasyRdf_Graph();
-		$graph->parse($acl, Format::TURTLE, $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['SERVER_NAME']);
+
+		error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
+		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 		
 		$grants = array();
 
