@@ -100,7 +100,11 @@ class WAC {
 		if (!$origin) {
 			return true;
 		}
-
+		if (strstr($this->baseUrl, $origin)) {
+			// check if the origin is the same as the baseUrl origin,
+			// if so this request is coming from ourselves.
+			return true;
+		}
 		$path = $uri->getPath();
 		if ($this->basePath) {
 			$path = str_replace($this->basePath, '', $path);
@@ -210,8 +214,8 @@ class WAC {
 		$filename = basename($path);
 		$path = dirname($path);
 		
-		error_log("REQUESTED PATH: $path");
-		error_log("REQUESTED FILE: $filename");
+		// error_log("REQUESTED PATH: $path");
+		// error_log("REQUESTED FILE: $filename");
 
 		$aclOptions = array(
 			$this->normalizePath($path.'/'.$filename.'.acl'),
