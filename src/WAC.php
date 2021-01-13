@@ -391,7 +391,7 @@ class WAC {
 
 		$graph = new \EasyRdf_Graph();
 
-		error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
+		// error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 		
 		$grants = array();
