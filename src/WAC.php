@@ -279,22 +279,9 @@ class WAC {
 			break;
 			case "PUT":
 				if ($this->filesystem->has($path)) {
-					$body = $request->getBody()->getContents();
-					$request->getBody()->rewind();
-
-					$existingFile = $this->filesystem->read($path);
-					if (strpos($body, $existingFile) === 0) { // new file starts with the content of the old, so 'Append' grant wil suffice;
-						return array(
-							"resource" => array(
-								'http://www.w3.org/ns/auth/acl#Write',
-								'http://www.w3.org/ns/auth/acl#Append'
-							)
-						);
-					} else {
-						return array(
-							"resource" => array('http://www.w3.org/ns/auth/acl#Write')
-						);
-					}
+					return array(
+						"resource" => array('http://www.w3.org/ns/auth/acl#Write')
+					);
 				} else {
 					// FIXME: to add a new file, Append is needed on the parent container;
 					return array(
