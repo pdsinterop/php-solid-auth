@@ -360,14 +360,7 @@ class WAC {
 			break;
 			case "PATCH";
 				$grants = array();
-				if ($this->filesystem->has($path)) {
-					$grants[] = array(
-						"type" => "resource",
-						"grants" => array(
-							'http://www.w3.org/ns/auth/acl#Read'
-						)
-					);
-				} else {
+				if (!$this->filesystem->has($path)) {
 					$grants[] = array(
 						"type" => "parent",
 						"grants" => array(
@@ -384,6 +377,12 @@ class WAC {
 					$grants[] = array(
 						"type" => "resource",
 						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+					);
+					// To delete a triple from a resource, you need to be able to know that the triple is there.
+					// which requires Read;
+					$grants[] = array(
+						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
 					);
 				}
 				if (strstr($body, "INSERT")) {
