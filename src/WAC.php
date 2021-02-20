@@ -148,8 +148,32 @@ class WAC {
 		
 		// error_log("GET GRANTS for $webId");
 
+		// Start with grants that everyone has
 		$grants = $this->getPublicGrants($resourcePath);
+		
+		// Then get grants that are valid for any authenticated agent;
+		$foafAgent = "http://xmlns.com/foaf/0.1/AuthenticatedAgent";
+		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
+		foreach ($matching as $match) {
+			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
+			if ($agentClass == $foafAgent) {
+				$accessTo = $match->get("<http://www.w3.org/ns/auth/acl#accessTo>");
+				$default = $match->get("<http://www.w3.org/ns/auth/acl#default>");
+				$modes = $match->all("<http://www.w3.org/ns/auth/acl#mode>");
+				if ($default) {
+					foreach ($modes as $mode) {
+						$grants["default"][$mode->getUri()] = $default->getUri();
+					}
+				}
+				if ($accessTo) {
+					foreach ($modes as $mode) {
+						$grants["accessTo"][$mode->getUri()] = $accessTo->getUri();
+					}
+				}
+			}
+		}
 
+		// Then add grants for this specific user;
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agent');
 		//error_log("MATCHING " . sizeof($matching));
 		// Find all grants machting our webId;
