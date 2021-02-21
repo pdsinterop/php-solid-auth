@@ -152,11 +152,11 @@ class WAC {
 		$grants = $this->getPublicGrants($resourcePath);
 		
 		// Then get grants that are valid for any authenticated agent;
-		$foafAgent = "http://xmlns.com/foaf/0.1/AuthenticatedAgent";
+		$authenticatedAgent = "http://www.w3.org/ns/auth/aclAuthenticatedAgent";
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
 		foreach ($matching as $match) {
 			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
-			if ($agentClass == $foafAgent) {
+			if ($agentClass == $authenticatedAgent) {
 				$accessTo = $match->get("<http://www.w3.org/ns/auth/acl#accessTo>");
 				$default = $match->get("<http://www.w3.org/ns/auth/acl#default>");
 				$modes = $match->all("<http://www.w3.org/ns/auth/acl#mode>");
