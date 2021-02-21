@@ -246,8 +246,8 @@ class WAC {
 		$filename = basename($path);
 		$path = dirname($path);
 		
-		error_log("REQUESTED PATH: $path");
-		error_log("REQUESTED FILE: $filename");
+		// error_log("REQUESTED PATH: $path");
+		// error_log("REQUESTED FILE: $filename");
 
 		$aclOptions = array(
 			$this->normalizePath($path.'/'.$filename.'.acl'),
