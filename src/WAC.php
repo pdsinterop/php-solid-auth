@@ -152,7 +152,7 @@ class WAC {
 		$grants = $this->getPublicGrants($resourcePath);
 		
 		// Then get grants that are valid for any authenticated agent;
-		$authenticatedAgent = "http://www.w3.org/ns/auth/aclAuthenticatedAgent";
+		$authenticatedAgent = "http://www.w3.org/ns/auth/acl#AuthenticatedAgent";
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
 		foreach ($matching as $match) {
 			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
