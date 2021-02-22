@@ -37,7 +37,10 @@ class WAC {
 			$wacHeaders[] = "public=\"$publicGrants\"";
 		}
 		
-		$response = $response->withHeader("Link", '<.acl>; rel="acl"');
+		if (preg_match("/control/", $userGrants)) { // only point to the .acl if the user has 'control'
+			$response = $response->withHeader("Link", '<.acl>; rel="acl"');
+		}
+
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
 		
 		return $response;
@@ -108,6 +111,9 @@ class WAC {
 	private function isOriginGranted($requestedGrants, $uri, $origin) {
 		if (!$requestedGrants) {
 			return true;
+		}
+		if (is_array($origin)) {
+			$origin = current($origin);
 		}
 		if (!$origin) {
 			return true;
