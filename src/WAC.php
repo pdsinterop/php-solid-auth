@@ -54,15 +54,27 @@ class WAC {
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
 
-		if (
-			$this->isUserGranted($requestedGrants['resource'], $uri, $webId) &&
-			$this->isUserGranted($requestedGrants['parent'], $parentUri, $webId) &&
-			$this->isOriginGranted($requestedGrants['resource'], $uri, $origin) &&
-			$this->isOriginGranted($requestedGrants['parent'], $parentUri, $origin)
-		) {
-			return true;
+		foreach ($requestedGrants as $requestedGrant) {
+			switch ($requestedGrant['type']) {
+				case "resource":
+					if (!$this->isUserGranted($requestedGrant['grants'], $uri, $webId)) {
+						return false;
+					}
+					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin)) {
+						return false;
+					}
+				break;
+				case "parent":
+					if (!$this->isUserGranted($requestedGrant['grants'], $parentUri, $webId)) {
+						return false;
+					}
+					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin)) {
+						return false;
+					}
+				break;
+			}
 		}
-		return false;
+		return true;
 	}
 
 	private function isUserGranted($requestedGrants, $uri, $webId) {
@@ -140,8 +152,32 @@ class WAC {
 		
 		// error_log("GET GRANTS for $webId");
 
+		// Start with grants that everyone has
 		$grants = $this->getPublicGrants($resourcePath);
+		
+		// Then get grants that are valid for any authenticated agent;
+		$authenticatedAgent = "http://www.w3.org/ns/auth/acl#AuthenticatedAgent";
+		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
+		foreach ($matching as $match) {
+			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
+			if ($agentClass == $authenticatedAgent) {
+				$accessTo = $match->get("<http://www.w3.org/ns/auth/acl#accessTo>");
+				$default = $match->get("<http://www.w3.org/ns/auth/acl#default>");
+				$modes = $match->all("<http://www.w3.org/ns/auth/acl#mode>");
+				if ($default) {
+					foreach ($modes as $mode) {
+						$grants["default"][$mode->getUri()] = $default->getUri();
+					}
+				}
+				if ($accessTo) {
+					foreach ($modes as $mode) {
+						$grants["accessTo"][$mode->getUri()] = $accessTo->getUri();
+					}
+				}
+			}
+		}
 
+		// Then add grants for this specific user;
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agent');
 		//error_log("MATCHING " . sizeof($matching));
 		// Find all grants machting our webId;
@@ -254,6 +290,30 @@ class WAC {
 	}
 
 	public function getRequestedGrants($request) {
+		/*
+			Build up the grants that are accepted as valid. The structure is as follows:
+			- Each entry of the result is treated as an 'and'.
+			- Each entry want a grant for either 'resource' or 'parent'
+			- Each entry contains a list of grants that can satisfy the request, treated as an 'or';
+
+			Examples:
+			A request that requires 'read' and 'write' on the targeted resource:
+			[
+				["type" => "resource", "grants" => ["http://www.w3.org/ns/auth/acl#Read"]],
+				["type" => "resource", "grants" => ["http://www.w3.org/ns/auth/acl#Write"]]
+			]
+
+			A request that requires 'write' on the resource and 'append' on the parent:
+			[
+				["type" => "resource", "grants" => ["http://www.w3.org/ns/auth/acl#Write"]],
+				["type" => "parent", "grants" => ["http://www.w3.org/ns/auth/acl#Append"]]
+			]
+
+			A request that requires 'append' or 'write' on the resource
+			[
+				["type" => "resource", "grants" => ["http://www.w3.org/ns/auth/acl#Append", "http://www.w3.org/ns/auth/acl#Write"]]
+			]
+		*/
 		$method = strtoupper($request->getMethod());
 		$path = $request->getUri()->getPath();
 		if ($this->basePath) {
@@ -265,7 +325,10 @@ class WAC {
 		// having Control allows all operations.
 		if (preg_match('/.acl$/', $path)) {
 			return array(
-				"resource" => array('http://www.w3.org/ns/auth/acl#Control')
+				array(
+					"type" => "resource",
+					"grants" => array('http://www.w3.org/ns/auth/acl#Control')
+				)
 			);
 		}
 
@@ -273,72 +336,102 @@ class WAC {
 			case "GET":
 			case "HEAD":
 				return array(
-					"resource" => array('http://www.w3.org/ns/auth/acl#Read')
+					array(
+						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
+					)
 				);
 			break;
 			case "DELETE":
 				return array(
-					"resource" => array('http://www.w3.org/ns/auth/acl#Write')
+					array(
+						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+					)
 				);
 			break;
 			case "PUT":
 				if ($this->filesystem->has($path)) {
-					$body = $request->getBody()->getContents();
-					$request->getBody()->rewind();
-
-					$existingFile = $this->filesystem->read($path);
-					if (strpos($body, $existingFile) === 0) { // new file starts with the content of the old, so 'Append' grant wil suffice;
-						return array(
-							"resource" => array(
-								'http://www.w3.org/ns/auth/acl#Write',
-								'http://www.w3.org/ns/auth/acl#Append'
-							)
-						);
-					} else {
-						return array(
-							"resource" => array('http://www.w3.org/ns/auth/acl#Write')
-						);
-					}
+					return array(
+						array(
+							"type" => "resource",
+							"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+						)
+					);
 				} else {
 					// FIXME: to add a new file, Append is needed on the parent container;
 					return array(
-						"resource" => array('http://www.w3.org/ns/auth/acl#Write'),
-						"parent"   => array('http://www.w3.org/ns/auth/acl#Append', 'http://www.w3.org/ns/auth/acl#Write')
+						array(
+							"type" => "resource",
+							"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+						),
+						array(
+							"type" => "parent",
+							"grants" => array(
+								'http://www.w3.org/ns/auth/acl#Append',
+								'http://www.w3.org/ns/auth/acl#Write'
+							)
+						)
 					);
 				}
 			break;
 			case "POST":
 				return array(
-					"resource" => array(
-						'http://www.w3.org/ns/auth/acl#Write', // We need 'append' for this, but because Write trumps Append, also allow it when we have Write;
-						'http://www.w3.org/ns/auth/acl#Append'
+					array(
+						"type" => "resource",
+						"grants" => array(
+							'http://www.w3.org/ns/auth/acl#Write', // We need 'append' for this, but because Write trumps Append, also allow it when we have Write;
+							'http://www.w3.org/ns/auth/acl#Append'
+						)
 					)
 				);
 			break;
 			case "PATCH";
 				$grants = array();
+				if (!$this->filesystem->has($path)) {
+					$grants[] = array(
+						"type" => "parent",
+						"grants" => array(
+							'http://www.w3.org/ns/auth/acl#Append',
+							'http://www.w3.org/ns/auth/acl#Write'
+						)
+					);
+				}
+
 				$body = $request->getBody()->getContents();
+				$request->getBody()->rewind();
+
 				if (strstr($body, "DELETE")) {
-					$grants[] = 'http://www.w3.org/ns/auth/acl#Write';
+					$grants[] = array(
+						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+					);
+					// To delete a triple from a resource, you need to be able to know that the triple is there.
+					// which requires Read;
+					$grants[] = array(
+						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
+					);
 				}
 				if (strstr($body, "INSERT")) {
 					if ($this->filesystem->has($path)) {
-						$grants[] = 'http://www.w3.org/ns/auth/acl#Append';
+						$grants[] = array(
+							"type" => "resource",
+							"grants" => array(
+								'http://www.w3.org/ns/auth/acl#Append',
+								'http://www.w3.org/ns/auth/acl#Write'
+							)
+						);
+					} else {
+						$grants[] = array(
+							"type" => "resource",
+							"grants" => array(
+								'http://www.w3.org/ns/auth/acl#Write'
+							)
+						);
 					}
-					$grants[] = 'http://www.w3.org/ns/auth/acl#Write';
 				}
-				// error_log($body);
-				$request->getBody()->rewind();
-				if ($this->filesystem->has($path)) {
-					return array(
-						"resource" => $grants
-					);
-				} else {
-					return array(
-						"resource" => $grants,
-						"parent"   => array('http://www.w3.org/ns/auth/acl#Append', 'http://www.w3.org/ns/auth/acl#Write')
-					);
-				}
+				return $grants;
 			break;
 		}
 	}
