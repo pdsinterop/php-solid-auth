@@ -5,7 +5,9 @@ namespace Pdsinterop\Solid\Auth\Utils;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Key;
 use Lcobucci\JWT\ValidationData;
-use CoderCat\JWKToPEM\JWKConverter;
+use Jose\Component\Core\JWK;
+use Jose\Component\Core\Util\ECKey;
+use Jose\Component\Core\Util\RSAKey;
 
 class DPop {
 	public function getWebId($request) {
@@ -111,17 +113,25 @@ class DPop {
 		if ($alg == "none") {
 			throw new \Exception("alg is none");
 		}
-		if ($alg != "RS256") {
-			throw new \Exception("alg is not supported");
-		}
 		
 		//error_log("5");
 		// 5.  that the JWT is signed using the public key contained in the
 		//     "jwk" header of the JWT,
 		$jwk = $dpop->getHeader("jwk");
-		$jwkConverter = new JWKConverter();
-		$pem = $jwkConverter->toPEM(json_decode(json_encode($jwk), true));
-		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
+		$webTokenJwk = \Jose\Component\Core\JWK::createFromJson(json_encode($jwk));
+		switch ($alg) {
+			case "RS256":
+				$pem = \Jose\Component\Core\Util\RSAKey::createFromJWK($webTokenJwk)->toPEM();
+				$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
+			break;
+			case "ES256":
+				$pem = \Jose\Component\Core\Util\ECKey::convertToPEM($webTokenJwk);
+				$signer = new \Lcobucci\JWT\Signer\Ecdsa\Sha256();
+			break;
+			default:
+				throw new \Exception("unsupported algorithm");
+			break;
+		}
 		$key = new \Lcobucci\JWT\Signer\Key($pem);
 		if (!$dpop->verify($signer, $key)) {
 			throw new \Exception("invalid signature");
