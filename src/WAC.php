@@ -46,7 +46,7 @@ class WAC {
 	 * see: https://github.com/solid/web-access-control-spec
 	 */
 
-	public function isAllowed($request, $webId, $origin=false, $allowedClients=[]) {
+	public function isAllowed($request, $webId, $origin=false, $allowedOrigins=[]) {
 		$requestedGrants = $this->getRequestedGrants($request);
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
@@ -60,7 +60,7 @@ class WAC {
 					if (!$this->isUserGranted($requestedGrant['grants'], $uri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin, $allowedClients)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin, $allowedOrigins)) {
 						return false;
 					}
 				break;
@@ -71,7 +71,7 @@ class WAC {
 					if (!$this->isUserGranted($requestedGrant['grants'], $parentUri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin, $allowedClients)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin, $allowedOrigins)) {
 						return false;
 					}
 				break;
@@ -120,11 +120,14 @@ class WAC {
 		return $this->checkGrants($requestedGrants, $uri, $grants);
 	}
 	
-	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedClients) {
+	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedOrigins) {
 		if (!$origin) {
 			return true;
 		}
-		
+		$parsedOrigin = parse_url($origin)['host'];
+		if (in_array($parsedOrigin, $allowedOrigins)) {
+			return true;
+		}
 		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
 		$grants = $this->getOriginGrants($uri, $origin);
 		//error_log("GRANTED GRANTS for origin $origin: " . json_encode($grants));
