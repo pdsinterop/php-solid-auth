@@ -186,7 +186,8 @@ class WAC {
 		
 		// error_log("GET GRANTS for $webId");
 
-		$grants = array();
+		$grants = $this->getPublicGrants($resourceUri);
+		
 		// Then get grants that are valid for any authenticated agent;
 		$authenticatedAgent = "http://www.w3.org/ns/auth/acl#AuthenticatedAgent";
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
