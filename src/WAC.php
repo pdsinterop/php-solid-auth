@@ -46,7 +46,7 @@ class WAC {
 	 * see: https://github.com/solid/web-access-control-spec
 	 */
 
-	public function isAllowed($request, $webId, $origin=false) {
+	public function isAllowed($request, $webId, $origin=false, $allowedClients=[]) {
 		$requestedGrants = $this->getRequestedGrants($request);
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
@@ -60,7 +60,7 @@ class WAC {
 					if (!$this->isUserGranted($requestedGrant['grants'], $uri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin, $allowedClients)) {
 						return false;
 					}
 				break;
@@ -71,7 +71,7 @@ class WAC {
 					if (!$this->isUserGranted($requestedGrant['grants'], $parentUri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin, $allowedClients)) {
 						return false;
 					}
 				break;
@@ -91,7 +91,6 @@ class WAC {
 		if (!$requestedGrants) {
 			return true;
 		}
-		$path = $this->getPathFromUri($uri);
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
 				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
@@ -121,11 +120,11 @@ class WAC {
 		return $this->checkGrants($requestedGrants, $uri, $grants);
 	}
 	
-	private function isOriginGranted($requestedGrants, $uri, $origin) {
+	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedClients) {
 		if (!$origin) {
 			return true;
 		}
-
+		
 		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
 		$grants = $this->getOriginGrants($uri, $origin);
 		//error_log("GRANTED GRANTS for origin $origin: " . json_encode($grants));
