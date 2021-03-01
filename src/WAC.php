@@ -22,12 +22,9 @@ class WAC {
 	}
 
 	public function addWACHeaders($request, $response, $webId) {
-		$path = $request->getUri()->getPath();
-		if ($this->basePath) {
-			$path = str_replace($this->basePath, '', $path);
-		}
-		$userGrants = $this->getWACGrants($this->getUserGrants($path, $webId), $request->getUri());
-		$publicGrants = $this->getWACGrants($this->getPublicGrants($path), $request->getUri());
+		$uri = $request->getUri();
+		$userGrants = $this->getWACGrants($this->getUserGrants($uri, $webId), $uri);
+		$publicGrants = $this->getWACGrants($this->getPublicGrants($uri), $uri);
 
 		$wacHeaders = array();
 		if ($userGrants) {
@@ -49,7 +46,7 @@ class WAC {
 	 * see: https://github.com/solid/web-access-control-spec
 	 */
 
-	public function isAllowed($request, $webId, $origin=false) {
+	public function isAllowed($request, $webId, $origin=false, $allowedOrigins=[]) {
 		$requestedGrants = $this->getRequestedGrants($request);
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
@@ -57,18 +54,24 @@ class WAC {
 		foreach ($requestedGrants as $requestedGrant) {
 			switch ($requestedGrant['type']) {
 				case "resource":
+					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
+						return true;
+					}
 					if (!$this->isUserGranted($requestedGrant['grants'], $uri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $uri, $origin, $allowedOrigins)) {
 						return false;
 					}
 				break;
 				case "parent":
+					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
+						return true;
+					}
 					if (!$this->isUserGranted($requestedGrant['grants'], $parentUri, $webId)) {
 						return false;
 					}
-					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin)) {
+					if (!$this->isOriginGranted($requestedGrant['grants'], $parentUri, $origin, $allowedOrigins)) {
 						return false;
 					}
 				break;
@@ -77,19 +80,17 @@ class WAC {
 		return true;
 	}
 
-	private function isUserGranted($requestedGrants, $uri, $webId) {
-		if (!$requestedGrants) {
-			return true;
-		}
-		
+	private function getPathFromUri($uri) {
 		$path = $uri->getPath();
 		if ($this->basePath) {
 			$path = str_replace($this->basePath, '', $path);
 		}
-
-		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
-		$grants = $this->getUserGrants($path, $webId);
-		// error_log("GRANTED GRANTS for $webId: " . json_encode($grants));
+		return $path;
+	}
+	private function checkGrants($requestedGrants, $uri, $grants) {
+		if (!$requestedGrants) {
+			return true;
+		}
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
 				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
@@ -104,39 +105,76 @@ class WAC {
 		}
 		return false;
 	}
+
+	private function isPublicGranted($requestedGrants, $uri) {
+		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
+		$grants = $this->getPublicGrants($uri);
+		// error_log("GRANTED GRANTS for public: " . json_encode($grants));
+		return $this->checkGrants($requestedGrants, $uri, $grants);
+	}
+
+	private function isUserGranted($requestedGrants, $uri, $webId) {
+		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
+		$grants = $this->getUserGrants($uri, $webId);
+		// error_log("GRANTED GRANTS for user $webId: " . json_encode($grants));
+		return $this->checkGrants($requestedGrants, $uri, $grants);
+	}
 	
-	private function isOriginGranted($requestedGrants, $uri, $origin) {
-		if (!$requestedGrants) {
-			return true;
-		}
+	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedOrigins) {
 		if (!$origin) {
 			return true;
 		}
-
-		$path = $uri->getPath();
-		if ($this->basePath) {
-			$path = str_replace($this->basePath, '', $path);
+		$parsedOrigin = parse_url($origin)['host'];
+		if (in_array($parsedOrigin, $allowedOrigins)) {
+			return true;
 		}
-
 		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
-		$grants = $this->getOriginGrants($path, $origin);
-		//error_log("GRANTED GRANTS for $origin: " . json_encode($grants));
-		if (is_array($grants)) {
-			foreach ($requestedGrants as $requestedGrant) {
-				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
-					return true;
-				} else if ($grants['default'][$requestedGrant]) {
-					if ($this->arePathsEqual($grants['default'][$requestedGrant], $uri)) {
-						return false; // only use default for children, not for an exact match;
+		$grants = $this->getOriginGrants($uri, $origin);
+		//error_log("GRANTED GRANTS for origin $origin: " . json_encode($grants));
+		return $this->checkGrants($requestedGrants, $uri, $grants);
+	}
+
+	private function getPublicGrants($resourceUri) {
+		$resourcePath = $this->getPathFromUri($resourceUri);
+		$aclPath = $this->getAclPath($resourcePath);
+		if (!$aclPath) {
+			return array();
+		}
+		
+		$acl = $this->filesystem->read($aclPath);
+
+		$graph = new \EasyRdf_Graph();
+
+		// error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
+		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
+		
+		$grants = array();
+
+		$foafAgent = "http://xmlns.com/foaf/0.1/Agent";
+		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
+		foreach ($matching as $match) {
+			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
+			if ($agentClass == $foafAgent) {
+				$accessTo = $match->get("<http://www.w3.org/ns/auth/acl#accessTo>");
+				$default = $match->get("<http://www.w3.org/ns/auth/acl#default>");
+				$modes = $match->all("<http://www.w3.org/ns/auth/acl#mode>");
+				if ($default) {
+					foreach ($modes as $mode) {
+						$grants["default"][$mode->getUri()] = $default->getUri();
 					}
-					return true;
+				}
+				if ($accessTo) {
+					foreach ($modes as $mode) {
+						$grants["accessTo"][$mode->getUri()] = $accessTo->getUri();
+					}
 				}
 			}
 		}
-		return false;
-	}
+		return $grants;
+	}	
 
-	private function getUserGrants($resourcePath, $webId) {
+	private function getUserGrants($resourceUri, $webId) {
+		$resourcePath = $this->getPathFromUri($resourceUri);
 		$aclPath = $this->getAclPath($resourcePath);
 		if (!$aclPath) {
 			return array();
@@ -148,9 +186,7 @@ class WAC {
 		
 		// error_log("GET GRANTS for $webId");
 
-		// Start with grants that everyone has
-		$grants = $this->getPublicGrants($resourcePath);
-		
+		$grants = array();
 		// Then get grants that are valid for any authenticated agent;
 		$authenticatedAgent = "http://www.w3.org/ns/auth/acl#AuthenticatedAgent";
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
@@ -200,7 +236,8 @@ class WAC {
 		return $grants;
 	}
 
-	private function getOriginGrants($resourcePath, $origin) {
+	private function getOriginGrants($resourceUri, $origin) {
+		$resourcePath = $this->getPathFromUri($resourceUri);
 		$aclPath = $this->getAclPath($resourcePath);
 		if (!$aclPath) {
 			return array();
@@ -212,8 +249,7 @@ class WAC {
 
 		// error_log("GET GRANTS for $origin");
 
-		$grants = $this->getPublicGrants($resourcePath);
-
+		$grants = array();
 		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#origin');
 		//error_log("MATCHING " . sizeof($matching));
 		// Find all grants machting our origin;
@@ -474,41 +510,4 @@ class WAC {
 	private function getAclBase($aclPath) {
 		return $this->baseUrl . $this->normalizePath(dirname($aclPath) . "/");
 	}
-	private function getPublicGrants($resourcePath) {
-		$aclPath = $this->getAclPath($resourcePath);
-		if (!$aclPath) {
-			return array();
-		}
-		
-		$acl = $this->filesystem->read($aclPath);
-
-		$graph = new \EasyRdf_Graph();
-
-		// error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
-		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
-		
-		$grants = array();
-
-		$foafAgent = "http://xmlns.com/foaf/0.1/Agent";
-		$matching = $graph->resourcesMatching('http://www.w3.org/ns/auth/acl#agentClass');
-		foreach ($matching as $match) {
-			$agentClass = $match->get("<http://www.w3.org/ns/auth/acl#agentClass>");
-			if ($agentClass == $foafAgent) {
-				$accessTo = $match->get("<http://www.w3.org/ns/auth/acl#accessTo>");
-				$default = $match->get("<http://www.w3.org/ns/auth/acl#default>");
-				$modes = $match->all("<http://www.w3.org/ns/auth/acl#mode>");
-				if ($default) {
-					foreach ($modes as $mode) {
-						$grants["default"][$mode->getUri()] = $default->getUri();
-					}
-				}
-				if ($accessTo) {
-					foreach ($modes as $mode) {
-						$grants["accessTo"][$mode->getUri()] = $accessTo->getUri();
-					}
-				}
-			}
-		}
-		return $grants;
-	}	
 }
