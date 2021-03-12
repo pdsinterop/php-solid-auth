@@ -162,7 +162,8 @@ class DPop {
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
-		$validationData = new ValidationData(); // It will use the current time to validate (iat, nbf and exp)
+		$leeway = 5; // allow 5 seconds clock skew
+		$validationData = new ValidationData(time() + $leeway); // It will use the current time to validate (iat, nbf and exp)
 		if (!$dpop->validate($validationData)) {
 			throw new \Exception("token timing is invalid");
 		}
