@@ -490,7 +490,12 @@ class WAC {
 	}
 	private function getWACGrants($grants, $uri) {
 		$wacGrants = array();
-		
+                if (!isset($grants['accessTo'])) {
+                        $grants['accessTo'] = [];
+                }
+                if (!isset($grants['default'])) {
+                        $grants['default'] = [];
+                }		
 		foreach ((array)$grants['accessTo'] as $grant => $grantedUri) {
 			if ($this->arePathsEqual($grantedUri, $uri)) {
 				$wacGrants[] = $this->grantToWac($grant);
