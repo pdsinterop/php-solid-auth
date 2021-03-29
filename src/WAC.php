@@ -93,9 +93,9 @@ class WAC {
 		}
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
-				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
+				if (isset($grants['accessTo']) && isset($grants['accessTo'][$requestedGrant]) && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
 					return true;
-				} else if ($grants['default'][$requestedGrant]) {
+				} else if (isset($grants['default']) && isset($grants['default'][$requestedGrant])) {
 					if ($this->arePathsEqual($grants['default'][$requestedGrant], $uri)) {
 						return false; // only use default for children, not for an exact match;
 					}
