@@ -31,7 +31,7 @@ class Server
     ) {
         $this->authorizationServer = $authorizationServer;
         $this->config = $config;
-        $this->response = $response;
+        $this->response = $response->withHeader('Access-Control-Allow-Origin', '*');
     }
 
     final public function respondToAccessTokenRequest(Request $request) : Response
@@ -148,6 +148,6 @@ class Server
             $response->getBody()->write($json);
         }
 
-        return $response->withHeader('content-type', 'application/json; charset=UTF-8');
+        return $response->withHeader('Access-Control-Allow-Origin', '*')->withHeader('content-type', 'application/json; charset=UTF-8');
     }
 }
