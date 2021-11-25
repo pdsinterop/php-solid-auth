@@ -380,6 +380,10 @@ class WAC {
 					array(
 						"type" => "resource",
 						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+					),
+					array(
+						"type" => "parent",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
 					)
 				);
 			break;
