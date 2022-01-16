@@ -51,7 +51,10 @@ class WAC {
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
 
-		foreach ($requestedGrants as $requestedGrant) {
+        // @FIXME: $origin can be anything at this point, null, string, array, bool
+        //         This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
+
+        foreach ($requestedGrants as $requestedGrant) {
 			switch ($requestedGrant['type']) {
 				case "resource":
 					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
@@ -121,11 +124,16 @@ class WAC {
 	}
 	
 	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedOrigins) {
+        if (is_array($origin)) {
+            $origin = reset($origin);
+        }
+
 		if (!$origin) {
 			return true;
 		}
+
 		$parsedOrigin = parse_url($origin)['host'];
-		if (in_array($parsedOrigin, $allowedOrigins)) {
+		if (in_array($parsedOrigin, $allowedOrigins, true)) {
 			return true;
 		}
 		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
