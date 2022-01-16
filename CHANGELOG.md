@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.6.3](https://github.com/pdsinterop/php-solid-auth/tree/v0.6.3) (2021-12-08)
+
+[Full Changelog](https://github.com/pdsinterop/php-solid-auth/compare/v0.6.2...v0.6.3)
+
+## [v0.6.2](https://github.com/pdsinterop/php-solid-auth/tree/v0.6.2) (2021-11-25)
+
+[Full Changelog](https://github.com/pdsinterop/php-solid-auth/compare/v0.6.1...v0.6.2)
+
+**Merged pull requests:**
+
+- Require write on parent for DELETE [\#18](https://github.com/pdsinterop/php-solid-auth/pull/18) ([michielbdejong](https://github.com/michielbdejong))
+- Fix for origin grants, allow registered clients [\#16](https://github.com/pdsinterop/php-solid-auth/pull/16) ([ylebre](https://github.com/ylebre))
+- replacing codercats jwk converter with web-token to support EC tokens [\#15](https://github.com/pdsinterop/php-solid-auth/pull/15) ([ylebre](https://github.com/ylebre))
+- remove debugging [\#14](https://github.com/pdsinterop/php-solid-auth/pull/14) ([ylebre](https://github.com/ylebre))
+- Set the base url to the url where the acl file was found [\#13](https://github.com/pdsinterop/php-solid-auth/pull/13) ([ylebre](https://github.com/ylebre))
+- add option to check Origin in acl [\#12](https://github.com/pdsinterop/php-solid-auth/pull/12) ([ylebre](https://github.com/ylebre))
+- Adding WAC / Dpop [\#11](https://github.com/pdsinterop/php-solid-auth/pull/11) ([ylebre](https://github.com/ylebre))
+- WIP: dpop handling [\#10](https://github.com/pdsinterop/php-solid-auth/pull/10) ([ylebre](https://github.com/ylebre))
+
 ## [v0.6.1](https://github.com/pdsinterop/php-solid-auth/tree/v0.6.1) (2020-10-19)
 
 [Full Changelog](https://github.com/pdsinterop/php-solid-auth/compare/0.6...v0.6.1)
