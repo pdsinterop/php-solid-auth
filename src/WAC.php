@@ -295,6 +295,7 @@ class WAC {
 		foreach ($aclOptions as $aclPath) {
 			if (
 				$this->filesystem->has($aclPath)
+                && $this->filesystem->read($aclPath) !== false
 			) {
 				return $aclPath;
 			}
