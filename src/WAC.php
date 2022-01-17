@@ -51,7 +51,10 @@ class WAC {
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
 
-		foreach ($requestedGrants as $requestedGrant) {
+        // @FIXME: $origin can be anything at this point, null, string, array, bool
+        //         This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
+
+        foreach ($requestedGrants as $requestedGrant) {
 			switch ($requestedGrant['type']) {
 				case "resource":
 					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
@@ -93,9 +96,9 @@ class WAC {
 		}
 		if (is_array($grants)) {
 			foreach ($requestedGrants as $requestedGrant) {
-				if ($grants['accessTo'] && $grants['accessTo'][$requestedGrant] && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
+				if (isset($grants['accessTo']) && isset($grants['accessTo'][$requestedGrant]) && $this->arePathsEqual($grants['accessTo'][$requestedGrant], $uri)) {
 					return true;
-				} else if ($grants['default'][$requestedGrant]) {
+				} else if (isset($grants['default']) && isset($grants['default'][$requestedGrant])) {
 					if ($this->arePathsEqual($grants['default'][$requestedGrant], $uri)) {
 						return false; // only use default for children, not for an exact match;
 					}
@@ -121,9 +124,14 @@ class WAC {
 	}
 	
 	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedOrigins) {
+        if (is_array($origin)) {
+            $origin = reset($origin);
+        }
+
 		if (!$origin) {
 			return true;
 		}
+
 		$parsedOrigin = parse_url($origin)['host'];
 		if (
 			in_array($parsedOrigin, $allowedOrigins, true) ||
@@ -298,6 +306,7 @@ class WAC {
 		foreach ($aclOptions as $aclPath) {
 			if (
 				$this->filesystem->has($aclPath)
+                && $this->filesystem->read($aclPath) !== false
 			) {
 				return $aclPath;
 			}
@@ -382,6 +391,10 @@ class WAC {
 				return array(
 					array(
 						"type" => "resource",
+						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+					),
+					array(
+						"type" => "parent",
 						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
 					)
 				);
@@ -500,7 +513,12 @@ class WAC {
 	}
 	private function getWACGrants($grants, $uri) {
 		$wacGrants = array();
-		
+                if (!isset($grants['accessTo'])) {
+                        $grants['accessTo'] = [];
+                }
+                if (!isset($grants['default'])) {
+                        $grants['default'] = [];
+                }		
 		foreach ((array)$grants['accessTo'] as $grant => $grantedUri) {
 			if ($this->arePathsEqual($grantedUri, $uri)) {
 				$wacGrants[] = $this->grantToWac($grant);

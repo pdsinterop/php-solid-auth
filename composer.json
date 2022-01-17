@@ -14,31 +14,25 @@
   },
   "config": {
     "bin-dir": "./bin",
-    "platform": {
-      "php": "7.2",
-      "ext-json": "1",
-      "ext-mbstring": "1",
-      "ext-openssl": "1"
-    },
     "sort-packages": true
   },
   "description": "OAuth2, OpenID and OIDC for Solid Server implementations.",
   "license": "MIT",
   "name": "pdsinterop/solid-auth",
   "require": {
-    "php": ">=7.2",
+    "php": "^7.3",
     "ext-json": "*",
     "ext-mbstring": "*",
     "ext-openssl": "*",
+    "laminas/laminas-diactoros": "^2.8",
+    "lcobucci/jwt": "3.3.3",
     "league/oauth2-server": "^8.1",
     "web-token/jwt-core": "^2.2"
   },
   "require-dev": {
     "ext-xdebug": "*",
     "ext-xml": "*",
-    "laminas/laminas-diactoros": "^2.3",
-    "lcobucci/jwt": "^3.3",
-    "phpunit/phpunit": "^8.5"
+    "phpunit/phpunit": "^8.5 | ^9.5"
   },
   "scripts": {
     "tests:example": "php -S localhost:8080 -t ./tests/ ./tests/example.php",
