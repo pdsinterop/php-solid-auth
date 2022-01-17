@@ -125,7 +125,10 @@ class WAC {
 			return true;
 		}
 		$parsedOrigin = parse_url($origin)['host'];
-		if (in_array($parsedOrigin, $allowedOrigins)) {
+		if (
+			in_array($parsedOrigin, $allowedOrigins, true) ||
+			in_array($origin, $allowedOrigins, true)
+		) {
 			return true;
 		}
 		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
@@ -480,9 +483,16 @@ class WAC {
 		if ($path == "/") {
 			return $uri;
 		}
-
+		if ($path == $this->basePath) {
+			return $uri;
+		}
+		
 		$parentPath = dirname($path) . '/';
-		if ($this->filesystem->has(str_replace($this->basePath, '', $parentPath))) {
+		
+		$localPath = str_replace($this->basePath, '', $parentPath);
+		if ($localPath == "/") {
+			return $uri->withPath($parentPath);
+		} elseif ($this->filesystem->has($localPath)) {
 			return $uri->withPath($parentPath);
 		} else {
 			return $this->getParentUri($uri->withPath($parentPath));
