@@ -2,7 +2,7 @@
 
 namespace Pdsinterop\Solid\Auth\Factory;
 
-use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use League\OAuth2\Server\CryptKey;
 use Pdsinterop\Solid\Auth\Config;
 use Pdsinterop\Solid\Auth\Enum\OAuth2\GrantType;
@@ -53,7 +53,7 @@ class ConfigFactory
 
         $keys = new Config\Keys(
             new CryptKey($privateKey),
-            new Key($publicKey),
+            InMemory::plainText($publicKey),
             $encryptionKey
         );
 
