@@ -33,7 +33,7 @@ class TokenGenerator
 		$builder = new \Lcobucci\JWT\Builder();
 		$token = $builder
 			->setIssuer($issuer)
-            ->permittedFor($clientId)
+			->permittedFor($clientId)
 			->set("sub", $clientId)
 			->sign($signer, $keychain->getPrivateKey($privateKey))
 			->getToken();
@@ -52,7 +52,7 @@ class TokenGenerator
 		$builder = new \Lcobucci\JWT\Builder();
 		$token = $builder
 			->setIssuer($issuer)
-            ->permittedFor($clientId)
+			->permittedFor($clientId)
 			->setIssuedAt(time())
 			->setNotBefore(time() - 1)
 			->setExpiration(time() + 14*24*60*60)
