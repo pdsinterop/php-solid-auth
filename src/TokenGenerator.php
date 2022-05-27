@@ -7,6 +7,10 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
 use League\OAuth2\Server\CryptTrait;
 
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
+
 class TokenGenerator
 {
     use CryptTrait;
@@ -28,16 +32,14 @@ class TokenGenerator
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		// Create JWT
-		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
-		$keychain = new \Lcobucci\JWT\Signer\Keychain();				
-		$builder = new \Lcobucci\JWT\Builder();
-		$token = $builder
-			->setIssuer($issuer)
+		$jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+		$token = $jwtConfig->builder()
+			->issuedBy($issuer)
 			->permittedFor($clientId)
-			->set("sub", $clientId)
-			->sign($signer, $keychain->getPrivateKey($privateKey))
-			->getToken();
-		return $token->__toString();
+			->relatedTo($clientId)
+			->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
+
+		return $token->toString();
 	}
 		
 	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
