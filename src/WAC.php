@@ -154,7 +154,7 @@ class WAC {
 		
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 
 		// error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
@@ -192,7 +192,7 @@ class WAC {
 		}
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 		
 		// error_log("GET GRANTS for $webId");
@@ -256,7 +256,7 @@ class WAC {
 		}
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 
 		// error_log("GET GRANTS for $origin");
