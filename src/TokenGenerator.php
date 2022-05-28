@@ -51,15 +51,19 @@ class TokenGenerator
 
                 // Create JWT
                 $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+                $now = new DateTimeImmutable();
+                $useAfter = $now->sub(new \DateInterval('PT1S'));
+                $expire = $now->add(new \DateInterval('PT' . 14*24*60*60 . 'S'));
+
                 $token = $jwtConfig->builder()
                         ->issuedBy($issuer)
                         ->permittedFor($clientId)
-                        ->issuedAt(new DateTimeImmutable(time()))
-                        ->canOnlyBeUsedAfter(new DateTimeImmutable(time() - 1))
-                        ->expiresAt(new DateTimeImmutable(time() + 14*24*60*60))
+                        ->issuedAt($now)
+                        ->canOnlyBeUsedAfter($useAfter)
+                        ->expiresAt($expire)
                         ->withClaim("azp", $clientId)
                         ->relatedTo($subject)
-                        ->withClaim("jti", $this->generateJti())
+                        ->identifiedBy($this->generateJti())
                         ->withClaim("nonce", $nonce)
                         ->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
                         ->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
