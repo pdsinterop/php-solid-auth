@@ -7,6 +7,7 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
 use League\OAuth2\Server\CryptTrait;
 
+use DateTimeImmutable;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -45,33 +46,30 @@ class TokenGenerator
 	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
-        $jwks = $this->getJwks();
+		$jwks = $this->getJwks();
 		$tokenHash = $this->generateTokenHash($accessToken);
 
-		// Create JWT
-		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
-		$keychain = new \Lcobucci\JWT\Signer\Keychain();
-		$builder = new \Lcobucci\JWT\Builder();
-		$token = $builder
-			->setIssuer($issuer)
-			->permittedFor($clientId)
-			->setIssuedAt(time())
-			->setNotBefore(time() - 1)
-			->setExpiration(time() + 14*24*60*60)
-			->set("azp", $clientId)
-			->set("sub", $subject)
-			->set("jti", $this->generateJti())
-			->set("nonce", $nonce)
-			->set("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
-			->set("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
-			->set("cnf", array(
-				"jkt" => $dpopKey,
-			//	"jwk" => $jwks['keys'][0]
-			))
-			->withHeader('kid', $jwks['keys'][0]['kid'])
-			->sign($signer, $keychain->getPrivateKey($privateKey))
-			->getToken();
-		return $token->__toString();
+                // Create JWT
+                $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+                $token = $jwtConfig->builder()
+                        ->issuedBy($issuer)
+                        ->permittedFor($clientId)
+                        ->issuedAt(new DateTimeImmutable(time()))
+                        ->canOnlyBeUsedAfter(new DateTimeImmutable(time() - 1))
+                        ->expiresAt(new DateTimeImmutable(time() + 14*24*60*60))
+                        ->withClaim("azp", $clientId)
+                        ->relatedTo($subject)
+                        ->withClaim("jti", $this->generateJti())
+                        ->withClaim("nonce", $nonce)
+                        ->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
+                        ->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
+                        ->withClaim("cnf", array(
+                                "jkt" => $dpopKey,
+                        //      "jwk" => $jwks['keys'][0]
+                        ))
+                        ->withHeader('kid', $jwks['keys'][0]['kid'])
+                        ->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
+                return $token->toString();
 	}
 	
 	public function respondToRegistration($registration, $privateKey) {
