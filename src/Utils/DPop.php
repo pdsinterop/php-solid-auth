@@ -3,7 +3,7 @@
 namespace Pdsinterop\Solid\Auth\Utils;
 
 use Lcobucci\JWT\Configuration;
-use Lcobucci\Clock\Clock;
+use Lcobucci\Clock\SystemClock;
 use DateTimeImmutable;
 use DateInterval;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -130,7 +130,7 @@ class DPop {
 			break;
 			case "ES256":
 				$pem = \Jose\Component\Core\Util\ECKey::convertToPEM($webTokenJwk);
-				$signer = new \Lcobucci\JWT\Signer\Ecdsa\Sha256();
+                                $signer = \Lcobucci\JWT\Signer\Ecdsa\Sha256::create();
 			break;
 			default:
 				throw new \Exception("unsupported algorithm");
@@ -138,9 +138,13 @@ class DPop {
 		}
 		$key = InMemory::plainText($pem);
 		$jwtConfig = Configuration::forSymmetricSigner($signer, InMemory::plainText($pem));
-		if (!$jwtConfig->validator()->validate($dpop, $jwtConfig->validationConstraints())) {
-			throw new \Exception("invalid signature");
-		}
+
+// FIXME: Add constraints;
+//		$constraint = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
+//		$jwtConfig->setValidationConstraints($constraint);
+//		if (!$jwtConfig->validator()->validate($dpop, ...$jwtConfig->validationConstraints())) {
+//			throw new \Exception("invalid signature");
+//		}
 		
 		//error_log("6");
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
@@ -167,10 +171,12 @@ class DPop {
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
-		$leeway = new \DateInterval("PT5S"); // allow 5 seconds clock skew
-		$clock = new Clock(new \DateTimeImmutable());
-		$constraint = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)  
-		if (!$constraint->asset($dpop)) {
+
+		$leeway = new \DateInterval("PT60S"); // allow 60 seconds clock skew
+		$clock = SystemClock::fromUTC();
+		$constraint = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
+		$jwtConfig->setValidationConstraints($constraint);
+		if (!$jwtConfig->validator()->validate($dpop, ...$jwtConfig->validationConstraints())) {
 			throw new \Exception("token timing is invalid");
 		}
 
