@@ -49,7 +49,7 @@ class DPop {
 		$jwk = $dpop->headers()->get("jwk");
 		//error_log(print_r($jwk, true));
 		
-		return $jwk->kid;		
+		return $jwk['kid'];
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
@@ -57,7 +57,7 @@ class DPop {
 		$jwt = $jwtConfig->parser()->parse($jwt);
 		$cnf = $jwt->claims()->get("cnf");
 		
-		if ($cnf->jkt == $dpopKey) {
+		if ($cnf['jkt'] == $dpopKey) {
 			//error_log("dpopKey matches");
 			return true;
 		}
