@@ -189,7 +189,6 @@ class DPop {
 	
 	private function getSubjectFromJwt($jwt) {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
-		$jwt = $jwtConfig->parser()->parse($jwt);
 		try {
 			$jwt = $jwtConfig->parser()->parse($jwt);
 		} catch(\Exception $e) {
