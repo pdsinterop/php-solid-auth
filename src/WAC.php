@@ -452,7 +452,8 @@ class WAC {
 				$body = $request->getBody()->getContents();
 				$request->getBody()->rewind();
 
-				if (strstr($body, "DELETE")) {
+				// FIXME: determine the actual patch types instead of using a string match;
+				if (strstr($body, "deletes")) {
 					$grants[] = array(
 						"type" => "resource",
 						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
@@ -464,7 +465,7 @@ class WAC {
 						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
 					);
 				}
-				if (strstr($body, "INSERT")) {
+				if (strstr($body, "inserts")) {
 					if ($this->filesystem->has($path)) {
 						$grants[] = array(
 							"type" => "resource",
