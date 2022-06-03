@@ -17,7 +17,7 @@ use Jose\Component\Core\Util\RSAKey;
 class DPop {
 	public function getWebId($request) {
 		$auth = explode(" ", $request->getServerParams()['HTTP_AUTHORIZATION']);
-		$jwt = $auth[1];
+		$jwt = $auth[1] ?? false;
 
 		if (strtolower($auth[0]) == "dpop") {
 			$dpop = $request->getServerParams()['HTTP_DPOP'];
