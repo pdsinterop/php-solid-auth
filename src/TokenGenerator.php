@@ -7,6 +7,11 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
 use League\OAuth2\Server\CryptTrait;
 
+use DateTimeImmutable;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
+
 class TokenGenerator
 {
     use CryptTrait;
@@ -28,48 +33,47 @@ class TokenGenerator
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		// Create JWT
-		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
-		$keychain = new \Lcobucci\JWT\Signer\Keychain();				
-		$builder = new \Lcobucci\JWT\Builder();
-		$token = $builder
-			->setIssuer($issuer)
-            ->permittedFor($clientId)
-			->set("sub", $clientId)
-			->sign($signer, $keychain->getPrivateKey($privateKey))
-			->getToken();
-		return $token->__toString();
+		$jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+		$token = $jwtConfig->builder()
+			->issuedBy($issuer)
+			->permittedFor($clientId)
+			->relatedTo($clientId)
+			->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
+
+		return $token->toString();
 	}
 		
 	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
-        $jwks = $this->getJwks();
+		$jwks = $this->getJwks();
 		$tokenHash = $this->generateTokenHash($accessToken);
 
-		// Create JWT
-		$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
-		$keychain = new \Lcobucci\JWT\Signer\Keychain();
-		$builder = new \Lcobucci\JWT\Builder();
-		$token = $builder
-			->setIssuer($issuer)
-            ->permittedFor($clientId)
-			->setIssuedAt(time())
-			->setNotBefore(time() - 1)
-			->setExpiration(time() + 14*24*60*60)
-			->set("azp", $clientId)
-			->set("sub", $subject)
-			->set("jti", $this->generateJti())
-			->set("nonce", $nonce)
-			->set("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
-			->set("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
-			->set("cnf", array(
-				"jkt" => $dpopKey,
-			//	"jwk" => $jwks['keys'][0]
-			))
-			->withHeader('kid', $jwks['keys'][0]['kid'])
-			->sign($signer, $keychain->getPrivateKey($privateKey))
-			->getToken();
-		return $token->__toString();
+                // Create JWT
+                $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+                $now = new DateTimeImmutable();
+                $useAfter = $now->sub(new \DateInterval('PT1S'));
+                $expire = $now->add(new \DateInterval('PT' . 14*24*60*60 . 'S'));
+
+                $token = $jwtConfig->builder()
+                        ->issuedBy($issuer)
+                        ->permittedFor($clientId)
+                        ->issuedAt($now)
+                        ->canOnlyBeUsedAfter($useAfter)
+                        ->expiresAt($expire)
+                        ->withClaim("azp", $clientId)
+                        ->relatedTo($subject)
+                        ->identifiedBy($this->generateJti())
+                        ->withClaim("nonce", $nonce)
+                        ->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
+                        ->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
+                        ->withClaim("cnf", array(
+                                "jkt" => $dpopKey,
+                        //      "jwk" => $jwks['keys'][0]
+                        ))
+                        ->withHeader('kid', $jwks['keys'][0]['kid'])
+                        ->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
+                return $token->toString();
 	}
 	
 	public function respondToRegistration($registration, $privateKey) {

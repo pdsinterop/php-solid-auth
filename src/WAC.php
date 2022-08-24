@@ -22,6 +22,8 @@ class WAC {
 	}
 
 	public function addWACHeaders($request, $response, $webId) {
+		$currentFormat = $this->filesystem->getAdapter()->getFormat(); // keep the format so we can put it back later. prevents the acl file from being converted;
+		$this->filesystem->getAdapter()->setFormat('');
 		$uri = $request->getUri();
 		$userGrants = $this->getWACGrants($this->getUserGrants($uri, $webId), $uri);
 		$publicGrants = $this->getWACGrants($this->getPublicGrants($uri), $uri);
@@ -36,7 +38,7 @@ class WAC {
 		
 		$response = $response->withHeader("Link", '<.acl>; rel="acl"');
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
-		
+		$this->filesystem->getAdapter()->setFormat($currentFormat);
 		return $response;
 	}
 	
@@ -51,10 +53,10 @@ class WAC {
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
 
-        // @FIXME: $origin can be anything at this point, null, string, array, bool
-        //         This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
+	// @FIXME: $origin can be anything at this point, null, string, array, bool
+	//	 This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
 
-        foreach ($requestedGrants as $requestedGrant) {
+	foreach ($requestedGrants as $requestedGrant) {
 			switch ($requestedGrant['type']) {
 				case "resource":
 					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
@@ -124,9 +126,9 @@ class WAC {
 	}
 	
 	private function isOriginGranted($requestedGrants, $uri, $origin, $allowedOrigins) {
-        if (is_array($origin)) {
-            $origin = reset($origin);
-        }
+	if (is_array($origin)) {
+	    $origin = reset($origin);
+	}
 
 		if (!$origin) {
 			return true;
@@ -154,7 +156,7 @@ class WAC {
 		
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 
 		// error_log("PARSE ACL from $aclPath with base " . $this->getAclBase($aclPath));
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
@@ -192,7 +194,7 @@ class WAC {
 		}
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 		
 		// error_log("GET GRANTS for $webId");
@@ -256,7 +258,7 @@ class WAC {
 		}
 		$acl = $this->filesystem->read($aclPath);
 
-		$graph = new \EasyRdf_Graph();
+		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
 
 		// error_log("GET GRANTS for $origin");
@@ -306,7 +308,7 @@ class WAC {
 		foreach ($aclOptions as $aclPath) {
 			if (
 				$this->filesystem->has($aclPath)
-                && $this->filesystem->read($aclPath) !== false
+		&& $this->filesystem->read($aclPath) !== false
 			) {
 				return $aclPath;
 			}
@@ -450,7 +452,8 @@ class WAC {
 				$body = $request->getBody()->getContents();
 				$request->getBody()->rewind();
 
-				if (strstr($body, "DELETE")) {
+				// FIXME: determine the actual patch types instead of using a string match;
+				if (strstr($body, "deletes")) {
 					$grants[] = array(
 						"type" => "resource",
 						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
@@ -462,7 +465,7 @@ class WAC {
 						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
 					);
 				}
-				if (strstr($body, "INSERT")) {
+				if (strstr($body, "inserts")) {
 					if ($this->filesystem->has($path)) {
 						$grants[] = array(
 							"type" => "resource",
@@ -513,12 +516,12 @@ class WAC {
 	}
 	private function getWACGrants($grants, $uri) {
 		$wacGrants = array();
-                if (!isset($grants['accessTo'])) {
-                        $grants['accessTo'] = [];
-                }
-                if (!isset($grants['default'])) {
-                        $grants['default'] = [];
-                }		
+		if (!isset($grants['accessTo'])) {
+			$grants['accessTo'] = [];
+		}
+		if (!isset($grants['default'])) {
+			$grants['default'] = [];
+		}
 		foreach ((array)$grants['accessTo'] as $grant => $grantedUri) {
 			if ($this->arePathsEqual($grantedUri, $uri)) {
 				$wacGrants[] = $this->grantToWac($grant);

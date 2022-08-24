@@ -2,9 +2,14 @@
 
 namespace Pdsinterop\Solid\Auth\Utils;
 
-use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Signer\Key;
-use Lcobucci\JWT\ValidationData;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\Clock\SystemClock;
+use DateTimeImmutable;
+use DateInterval;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\Util\ECKey;
 use Jose\Component\Core\Util\RSAKey;
@@ -12,7 +17,7 @@ use Jose\Component\Core\Util\RSAKey;
 class DPop {
 	public function getWebId($request) {
 		$auth = explode(" ", $request->getServerParams()['HTTP_AUTHORIZATION']);
-		$jwt = $auth[1];
+		$jwt = $auth[1] ?? false;
 
 		if (strtolower($auth[0]) == "dpop") {
 			$dpop = $request->getServerParams()['HTTP_DPOP'];
@@ -37,22 +42,22 @@ class DPop {
 		//error_log("11");
 		$this->validateDpop($dpop, $request);
 		//error_log("22");
-		
-		$parser = new \Lcobucci\JWT\Parser();
+
 		// 1.  the string value is a well-formed JWT,
-		$dpop = $parser->parse($dpop);
-		$jwk = $dpop->getHeader("jwk");
+		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$dpop = $jwtConfig->parser()->parse($dpop);
+		$jwk = $dpop->headers()->get("jwk");
 		//error_log(print_r($jwk, true));
 		
-		return $jwk->kid;		
+		return $jwk['kid'];
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
-		$parser = new \Lcobucci\JWT\Parser();
-		$jwt = $parser->parse($jwt);
-		$cnf = $jwt->getClaim("cnf");
+		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$jwt = $jwtConfig->parser()->parse($jwt);
+		$cnf = $jwt->claims()->get("cnf");
 		
-		if ($cnf->jkt == $dpopKey) {
+		if ($cnf['jkt'] == $dpopKey) {
 			//error_log("dpopKey matches");
 			return true;
 		}
@@ -88,17 +93,16 @@ class DPop {
 				   received previously (see Section 9.1).
 		*/
 		//error_log("1");
-
-		$parser = new \Lcobucci\JWT\Parser();
 		// 1.  the string value is a well-formed JWT,
-		$dpop = $parser->parse($dpop);
+		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$dpop = $jwtConfig->parser()->parse($dpop);
 		
 		//error_log("2");
 	    // 2.  all required claims are contained in the JWT,
-		$htm = $dpop->getClaim("htm"); // http method
-		$htu = $dpop->getClaim("htu"); // http uri
-		$typ = $dpop->getHeader("typ");
-		$alg = $dpop->getHeader("alg");
+		$htm = $dpop->claims()->get("htm"); // http method
+		$htu = $dpop->claims()->get("htu"); // http uri
+		$typ = $dpop->headers()->get("typ");
+		$alg = $dpop->headers()->get("alg");
 
 		//error_log("3");
 		// 3.  the "typ" field in the header has the value "dpop+jwt",
@@ -117,7 +121,7 @@ class DPop {
 		//error_log("5");
 		// 5.  that the JWT is signed using the public key contained in the
 		//     "jwk" header of the JWT,
-		$jwk = $dpop->getHeader("jwk");
+		$jwk = $dpop->headers()->get("jwk");
 		$webTokenJwk = \Jose\Component\Core\JWK::createFromJson(json_encode($jwk));
 		switch ($alg) {
 			case "RS256":
@@ -126,16 +130,21 @@ class DPop {
 			break;
 			case "ES256":
 				$pem = \Jose\Component\Core\Util\ECKey::convertToPEM($webTokenJwk);
-				$signer = new \Lcobucci\JWT\Signer\Ecdsa\Sha256();
+                                $signer = \Lcobucci\JWT\Signer\Ecdsa\Sha256::create();
 			break;
 			default:
 				throw new \Exception("unsupported algorithm");
 			break;
 		}
-		$key = new \Lcobucci\JWT\Signer\Key($pem);
-		if (!$dpop->verify($signer, $key)) {
-			throw new \Exception("invalid signature");
-		}
+		$key = InMemory::plainText($pem);
+		$jwtConfig = Configuration::forSymmetricSigner($signer, InMemory::plainText($pem));
+
+// FIXME: Add constraints;
+//		$constraint = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
+//		$jwtConfig->setValidationConstraints($constraint);
+//		if (!$jwtConfig->validator()->validate($dpop, ...$jwtConfig->validationConstraints())) {
+//			throw new \Exception("invalid signature");
+//		}
 		
 		//error_log("6");
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
@@ -162,9 +171,12 @@ class DPop {
 
 		//error_log("8");
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
-		$leeway = 5; // allow 5 seconds clock skew
-		$validationData = new ValidationData(time() + $leeway); // It will use the current time to validate (iat, nbf and exp)
-		if (!$dpop->validate($validationData)) {
+
+		$leeway = new \DateInterval("PT60S"); // allow 60 seconds clock skew
+		$clock = SystemClock::fromUTC();
+		$constraint = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
+		$jwtConfig->setValidationConstraints($constraint);
+		if (!$jwtConfig->validator()->validate($dpop, ...$jwtConfig->validationConstraints())) {
 			throw new \Exception("token timing is invalid");
 		}
 
@@ -176,14 +188,14 @@ class DPop {
 	}
 	
 	private function getSubjectFromJwt($jwt) {
-		$parser = new \Lcobucci\JWT\Parser();
+		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		try {
-			$jwt = $parser->parse($jwt);
+			$jwt = $jwtConfig->parser()->parse($jwt);
 		} catch(\Exception $e) {
 			return $this->server->getResponse()->withStatus(409, "Invalid JWT token");
 		}
 
-		$sub = $jwt->getClaim("sub");
+		$sub = $jwt->claims()->get("sub");
 		return $sub;
 	}
 }
