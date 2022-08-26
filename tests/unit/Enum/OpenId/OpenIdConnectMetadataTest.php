@@ -4,6 +4,9 @@ namespace Pdsinterop\Solid\Auth\Enum\OpenId;
 
 use Pdsinterop\Solid\Auth\Enum\AbstractEnumTest as TestCase;
 
+/**
+ * @coversNothing
+ */
 class OpenIdConnectMetadataTest extends TestCase
 {
     final public function getEnum() : OpenIdConnectMetadata
@@ -49,6 +52,9 @@ class OpenIdConnectMetadataTest extends TestCase
             'userinfo_encryption_enc_values_supported',
             'userinfo_endpoint',
             'userinfo_signing_alg_values_supported',
+            'token_types_supported',
+            'check_session_iframe',
+            'end_session_endpoint'
         ];
     }
 

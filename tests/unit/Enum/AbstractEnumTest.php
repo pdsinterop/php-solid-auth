@@ -84,6 +84,6 @@ abstract class AbstractEnumTest extends TestCase
     {
         $expected = $this->getExpectedValues();
 
-        self::assertEquals($actual, $expected);
+        self::assertEquals($expected, $actual);
     }
 }

@@ -7,6 +7,9 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Exception\LogicException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @coversNothing
+ */
 class ServerTest extends TestCase
 {
     final public function testServerConfigShouldComplainWhenInstantiatedWithoutData() : void
@@ -95,13 +98,25 @@ class ServerTest extends TestCase
      */
     final public function testServerConfigShouldReturnExpectedValuesWhenSerializedWithRequiredKeysPresent(array $actual)
     {
-        self::assertEquals($actual,  [
+        self::assertEquals([
             'authorization_endpoint' => 'https://server/authorize',
             'id_token_signing_alg_values_supported' => ['RS256'],
             'issuer' => 'https://server/identifier',
             'jwks_uri' => 'https://server/jwk',
-            'response_types_supported' => ['code', 'id_token', 'token'],
+            'response_types_supported' => ['code', 'code token', 'code id_token', 'id_token code', 'id_token', 'id_token token', 'code id_token token', 'none'],
             'subject_types_supported' => ['public'],
-        ]);
+            'token_types_supported' => ['legacyPop','dpop'],
+            'response_modes_supported' => ['query', 'fragment'],
+            'grant_types_supported' => ['authorization_code', 'implicit', 'refresh_token', 'client_credentials'],
+            'token_endpoint_auth_methods_supported' => 'client_secret_basic',
+            'token_endpoint_auth_signing_alg_values_supported' => ['RS256'],
+            'display_values_supported' => [],
+            'claim_types_supported' => ['normal'],
+            'claims_supported' => [],
+            'claims_parameter_supported' => false,
+            'request_parameter_supported' => true,
+            'request_uri_parameter_supported' => false,
+            'require_request_uri_registration' => false
+        ], $actual);
     }
 }
