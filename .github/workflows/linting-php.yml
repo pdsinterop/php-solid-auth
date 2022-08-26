@@ -1,0 +1,13 @@
+---
+name: Linting PHP
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  lint-php:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pipeline-components/php-linter@master
