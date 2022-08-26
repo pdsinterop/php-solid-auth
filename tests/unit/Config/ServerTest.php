@@ -7,6 +7,9 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Exception\LogicException;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @coversNothing
+ */
 class ServerTest extends TestCase
 {
     final public function testServerConfigShouldComplainWhenInstantiatedWithoutData() : void
