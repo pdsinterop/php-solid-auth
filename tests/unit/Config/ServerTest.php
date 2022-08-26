@@ -98,13 +98,13 @@ class ServerTest extends TestCase
      */
     final public function testServerConfigShouldReturnExpectedValuesWhenSerializedWithRequiredKeysPresent(array $actual)
     {
-        self::assertEquals($actual,  [
+        self::assertEquals([
             'authorization_endpoint' => 'https://server/authorize',
             'id_token_signing_alg_values_supported' => ['RS256'],
             'issuer' => 'https://server/identifier',
             'jwks_uri' => 'https://server/jwk',
             'response_types_supported' => ['code', 'id_token', 'token'],
             'subject_types_supported' => ['public'],
-        ]);
+        ], $actual);
     }
 }
