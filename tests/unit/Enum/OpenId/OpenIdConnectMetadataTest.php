@@ -4,6 +4,9 @@ namespace Pdsinterop\Solid\Auth\Enum\OpenId;
 
 use Pdsinterop\Solid\Auth\Enum\AbstractEnumTest as TestCase;
 
+/**
+ * @coversNothing
+ */
 class OpenIdConnectMetadataTest extends TestCase
 {
     final public function getEnum() : OpenIdConnectMetadata
