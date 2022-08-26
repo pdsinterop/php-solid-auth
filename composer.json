@@ -32,7 +32,7 @@
   "require-dev": {
     "ext-xdebug": "*",
     "ext-xml": "*",
-    "phpunit/phpunit": "^8.5 | ^9.5"
+    "phpunit/phpunit": "^9"
   },
   "scripts": {
     "tests:example": "php -S localhost:8080 -t ./tests/ ./tests/example.php",
