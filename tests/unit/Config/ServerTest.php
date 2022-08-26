@@ -103,8 +103,20 @@ class ServerTest extends TestCase
             'id_token_signing_alg_values_supported' => ['RS256'],
             'issuer' => 'https://server/identifier',
             'jwks_uri' => 'https://server/jwk',
-            'response_types_supported' => ['code', 'id_token', 'token'],
+            'response_types_supported' => ['code', 'code token', 'code id_token', 'id_token code', 'id_token', 'id_token token', 'code id_token token', 'none'],
             'subject_types_supported' => ['public'],
+            'token_types_supported' => [],
+            'response_modes_supported' => [],
+            'grant_types_supported' => [],
+            'token_endpoint_auth_methods_supported' => 'client_secret_basic',
+            'token_endpoint_auth_signing_alg_values_supported' => [],
+            'display_values_supported' => [],
+            'claim_types_supported' => [],
+            'claims_supported' => [],
+            'claims_parameter_supported' => false,
+            'request_parameter_supported' => true,
+            'request_uri_parameter_supported' => false,
+            'require_request_uri_registration' => false
         ], $actual);
     }
 }
