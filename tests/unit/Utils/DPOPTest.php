@@ -7,7 +7,6 @@ use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 
 /**
  * @coversDefaultClass \Pdsinterop\Solid\Auth\Utils\DPop
- * @covers ::__construct
  * @covers ::<!public>
  * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
  */
@@ -17,7 +16,7 @@ class DPOPTest extends TestCase
 	private $dpop;
 	private $url;
 	private $serverRequest;
-    
+
 	protected function sign($dpop, $privateKey=null)
 	{
 		$keyPath    = __DIR__ . '/../../fixtures/keys';
