@@ -15,18 +15,38 @@ use Jose\Component\Core\JWK;
 use Jose\Component\Core\Util\ECKey;
 use Jose\Component\Core\Util\RSAKey;
 
+/**
+ * This class contains code to fetch the WebId from a request
+ * It also verifies that the request has a valid DPoP token
+ * that matches the access token
+ */
 class DPop {
+	
+	/**
+	 * This method fetches the WebId from a request and verifies
+	 * that the request has a valid DPoP token that matches
+	 * the access token.
+	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 * @return string the WebId, or "public" if no WebId is found
+	 * @throws \Exception "Invalid token" when the DPoP token is invalid
+	 * @throws \Exception "Missng DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
+	 */
 	public function getWebId($request) {
 		$auth = explode(" ", $request->getServerParams()['HTTP_AUTHORIZATION']);
 		$jwt = $auth[1] ?? false;
 
 		if (strtolower($auth[0]) == "dpop") {
 			$dpop = $request->getServerParams()['HTTP_DPOP'];
+			//@FIXME: check that there is just one DPoP token in the request
 			if ($dpop) {
 				$dpopKey = $this->getDpopKey($dpop, $request);
-				if (!$this->validateJwtDpop($jwt, $dpopKey)) {
-					throw new \Exception("Invalid token");
+				try {
+					$this->validateJwtDpop($jwt, $dpopKey);
+				} catch (Lcobucci\JWT\Validation\RequiredConstraintsViolated $e) {
+					throw new \Exception("Invalid token", $e);
 				}
+			} else {
+				throw new \Exception("Missing DPoP token");
 			}
 		}
 
@@ -39,16 +59,21 @@ class DPop {
 		return $webId;
 	}
 
+	/**
+	 * Returns the "kid" from the "jwk" header in the DPoP token.
+	 * The DPoP token must be valid.
+	 * @param  string $dpop    The DPoP token
+	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 * @return string          the "kid" from the "jwk" header in the DPoP token.
+	 * @throws Lcobucci\JWT\Validation\RequiredConstraintsViolated
+	 */
 	public function getDpopKey($dpop, $request) {
-		//error_log("11");
 		$this->validateDpop($dpop, $request);
-		//error_log("22");
 
 		// 1.  the string value is a well-formed JWT,
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
-		$jwk = $dpop->headers()->get("jwk");
-		//error_log(print_r($jwk, true));
+		$jwk  = $dpop->headers()->get("jwk");
 		
 		return $jwk['kid'];
 	}
@@ -59,13 +84,10 @@ class DPop {
 		$cnf = $jwt->claims()->get("cnf");
 		
 		if ($cnf['jkt'] == $dpopKey) {
-			//error_log("dpopKey matches");
 			return true;
 		}
-		//error_log("dpopKey mismatch");
-		//error_log(print_r($cnf, true));
-		//error_log($dpopKey);
 		
+		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
 		return false;
 	}
 

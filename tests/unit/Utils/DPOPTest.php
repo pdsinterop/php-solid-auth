@@ -6,7 +6,10 @@ use PHPUnit\Framework\TestCase;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 
 /**
- * @covers DPop
+ * @coversDefaultClass \Pdsinterop\Solid\Auth\Utils\DPop
+ * @covers ::__construct
+ * @covers ::<!public>
+ * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
  */
 class DPOPTest extends TestCase
 {
@@ -14,10 +17,10 @@ class DPOPTest extends TestCase
 	private $dpop;
 	private $url;
 	private $serverRequest;
-
+    
 	protected function sign($dpop, $privateKey=null)
 	{
-		$keyPath    = dirname(__DIR__) . '/../fixtures/keys';
+		$keyPath    = __DIR__ . '/../../fixtures/keys';
 		if (!$privateKey) {
 	        $privateKey = file_get_contents($keyPath . '/private.key');
 	    }
@@ -100,6 +103,9 @@ EOF;
         return $pubkey;
     }
 
+    /**
+     * @covers ::validateDpop
+     */
 	public function testWrongTyp(): void
     {
         $this->dpop['header']['typ'] = 'jwt';
@@ -112,6 +118,9 @@ EOF;
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
     }
 
+    /**
+     * @covers ::validateDpop
+     */
     public function testAlgNone(): void 
     {
         $this->dpop['header']['alg'] = 'none';
@@ -123,6 +132,9 @@ EOF;
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
     }
 
+    /**
+     * @covers ::validateDpop
+     */
     public function testWrongKey(): void
     {
         $theWrongKey = $this->getWrongKey();
@@ -143,6 +155,9 @@ EOF;
     	$this->assertFalse($result);
     }
 
+    /**
+     * @covers ::validateDpop
+     */
     public function testCorrectToken(): void
     {
         $token = $this->sign($this->dpop);
