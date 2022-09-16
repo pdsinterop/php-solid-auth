@@ -48,7 +48,7 @@ class DPOPTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$keyPath    = dirname(__DIR__) . '/../fixtures/keys';
+		$keyPath    = __DIR__ . '/../../fixtures/keys';
         $privateKey = file_get_contents($keyPath . '/private.key');
         $publicKey  = file_get_contents($keyPath . '/public.key');
 
@@ -86,20 +86,11 @@ class DPOPTest extends TestCase
 	}
 
 	private function getWrongKey() {
-        $key = <<<EOF
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiGzr51tpH6F2HwMUSKCX
-zxyYfZyNJpKZWzNb3AMrNZTGlKDHHuVCkxNmHV0yFIxr3flRNmvxebLxsuYPAmCF
-ccV1r+1Pry244MHOIq3aq5mIRq+smVSPk350WpyO4jn8mOLOiH+CYe9LXmJSPBvO
-zZHwjEp+VmIGp5oDUZc5nnrf/UkQcj6jvKj0TanD8vGpDg9w3WbkQHWbFAMGPQdc
-YF5CZ68QPKPS86/aOdcnyoliSyIMn9BhrSXS8+Q3fCZHsYgejUjD7e0sx/+gBCrW
-MOuzbyD29mgbqETiSCZS1YLxgPnA34NRRKY06G0fMusXSGsXC+y7EU8JjTvTs4/L
-PwIDAQAB
------END PUBLIC KEY-----
-EOF;
-        // Get public key  
-        $pubkey=\openssl_pkey_get_details(\openssl_pkey_get_public($key));  
-        return $pubkey;
+        $keyPath    = __DIR__ . '/../../fixtures/keys';
+        $wrongKey  = file_get_contents($keyPath . '/wrong.key');
+
+        $keyInfo = \openssl_pkey_get_details(\openssl_pkey_get_public($wrongKey));
+        return $keyInfo;
     }
 
     /**
@@ -129,6 +120,7 @@ EOF;
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('alg is none');
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
+        $this->assertTrue($result);
     }
 
     /**
@@ -146,12 +138,11 @@ EOF;
 
         $dpop = new DPop();
         try {
-        	$result = $dpop->validateDpop($token['token'], $this->serverRequest);
+        	$dpop->validateDpop($token['token'], $this->serverRequest);
 	    } catch(RequiredConstraintsViolated $e) {
-	    	$result = false;
+            // need to check the actual violation in the exception, so expectExceptionMessage is not sufficient
 	    	$this->assertSame($e->violations()[0]->getMessage(),'Token signature mismatch');
     	}
-    	$this->assertFalse($result);
     }
 
     /**
