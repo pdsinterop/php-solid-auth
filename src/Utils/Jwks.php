@@ -39,13 +39,13 @@ class Jwks implements JsonSerializable
      *
      * @return array
      */
-    private function createKey(string $certificate, $subject) : array
+    private function createKey(string $certificate, $subject, $exponent) : array
     {
         return [
             JwkParameter::ALGORITHM => 'RS256',
             JwkParameter::KEY_ID => md5($certificate),
             JwkParameter::KEY_TYPE => 'RSA',
-            RsaParameter::PUBLIC_EXPONENT => 'AQAB', // Hard-coded as `Base64Url::encode($keyInfo['rsa']['e'])` tends to be empty...
+            RsaParameter::PUBLIC_EXPONENT => Base64Url::encode($exponent),
             RsaParameter::PUBLIC_MODULUS => Base64Url::encode($subject),
             JwkParameter::KEY_OPERATIONS => array("verify"),
         ];
@@ -70,7 +70,7 @@ class Jwks implements JsonSerializable
             $key = openssl_pkey_get_public($certificate);
             $keyInfo = openssl_pkey_get_details($key);
 
-            $jwks['keys'][] = $this->createKey($certificate, $keyInfo['rsa']['n']);
+            $jwks['keys'][] = $this->createKey($certificate, $keyInfo['rsa']['n'], $keyInfo['rsa']['e']);
         });
 
         return $jwks;
