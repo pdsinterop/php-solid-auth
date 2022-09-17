@@ -21,13 +21,16 @@ use Jose\Component\Core\Util\RSAKey;
  * that matches the access token
  */
 class DPop {
-	
+
 	/**
 	 * This method fetches the WebId from a request and verifies
 	 * that the request has a valid DPoP token that matches
 	 * the access token.
+	 *
 	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 *
 	 * @return string the WebId, or "public" if no WebId is found
+	 *
 	 * @throws \Exception "Invalid token" when the DPoP token is invalid
 	 * @throws \Exception "Missng DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
 	 */
@@ -62,9 +65,12 @@ class DPop {
 	/**
 	 * Returns the "kid" from the "jwk" header in the DPoP token.
 	 * The DPoP token must be valid.
+	 *
 	 * @param  string $dpop    The DPoP token
 	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 *
 	 * @return string          the "kid" from the "jwk" header in the DPoP token.
+	 *
 	 * @throws Lcobucci\JWT\Validation\RequiredConstraintsViolated
 	 */
 	public function getDpopKey($dpop, $request) {
@@ -74,7 +80,7 @@ class DPop {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
-		
+
 		return $jwk['kid'];
 	}
 
@@ -82,11 +88,11 @@ class DPop {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$jwt = $jwtConfig->parser()->parse($jwt);
 		$cnf = $jwt->claims()->get("cnf");
-		
+
 		if ($cnf['jkt'] == $dpopKey) {
 			return true;
 		}
-		
+
 		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
 		return false;
 	}
@@ -94,9 +100,12 @@ class DPop {
 	/**
 	 * Validates that the DPOP token matches all requirements from 
 	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-4.2
+	 *
 	 * @param  string $dpop    The DPOP token
 	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 *
 	 * @return bool            True if the DPOP token is valid, false otherwise
+	 *
 	 * @throws Lcobucci\JWT\Validation\RequiredConstraintsViolated
 	 */
 	public function validateDpop($dpop, $request) {
@@ -128,7 +137,7 @@ class DPop {
 		// 1.  the string value is a well-formed JWT,
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
-		
+
 	    // 2.  all required claims are contained in the JWT,
 		$htm = $dpop->claims()->get("htm"); // http method
 		if (!$htm) {
@@ -158,7 +167,7 @@ class DPop {
 		if ($alg == "none") {
 			throw new \Exception("alg is none");
 		}
-		
+
 		// 5.  that the JWT is signed using the public key contained in the
 		//     "jwk" header of the JWT,
 		$jwk = $dpop->headers()->get("jwk");
@@ -179,7 +188,7 @@ class DPop {
 		$key = InMemory::plainText($pem);
 		$validationConstraints = [];
 		$validationConstraints[] = new SignedWith($signer, $key);
-		
+
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
 		//	   in which the JWT was received (case-insensitive),
 		if (strtolower($htm) != strtolower($request->getMethod())) {
@@ -215,7 +224,7 @@ class DPop {
 
 		return true;
 	}
-	
+
 	private function getSubjectFromJwt($jwt) {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		try {
