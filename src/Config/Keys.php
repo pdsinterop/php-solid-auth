@@ -6,7 +6,7 @@ use Defuse\Crypto\Key as CryptoKey;
 use Lcobucci\JWT\Signer\Key\InMemory as Key;
 use League\OAuth2\Server\CryptKey;
 
-class Keys
+class Keys implements KeysInterface
 {
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
