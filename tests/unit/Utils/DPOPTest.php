@@ -2,15 +2,16 @@
 
 namespace Pdsinterop\Solid\Auth\Utils;
 
-use PHPUnit\Framework\TestCase;
+use Pdsinterop\Solid\Auth\AbstractTestCase;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 
 /**
  * @coversDefaultClass \Pdsinterop\Solid\Auth\Utils\DPop
  * @covers ::<!public>
+ *
  * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
  */
-class DPOPTest extends TestCase
+class DPOPTest extends AbstractTestCase
 {
     ////////////////////////////////// FIXTURES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -66,6 +67,45 @@ class DPOPTest extends TestCase
     }
 
     /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    /**
+     * @testdox Dpop SHOULD be created WHEN instantiated without parameters
+     */
+    final public function testInstantiation(): void
+    {
+        $actual = new DPop();
+        $expected = DPop::class;
+
+        $this->assertInstanceOf($expected, $actual);
+    }
+
+    /**
+     * @testdox Dpop SHOULD complain WHEN ask to validate DPOP without JWT given
+     *
+     * @covers ::validateDpop
+     */
+    final public function testValidateDpopWithoutJwt(): void
+    {
+        $this->expectArgumentCountError(1);
+
+        $dpop = new DPop();
+
+        $dpop->validateDpop();
+    }
+
+    /**
+     * @testdox Dpop SHOULD complain WHEN ask to validate DPOP without Request given
+     *
+     * @covers ::validateDpop
+     */
+    final public function testValidateDpopWithoutRequest(): void
+    {
+        $this->expectArgumentCountError(2);
+
+        $dpop = new DPop();
+
+        $dpop->validateDpop('mock jwt');
+    }
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to validate a DPOP with wrong header type
@@ -138,6 +178,12 @@ class DPOPTest extends TestCase
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
         $this->assertTrue($result);
     }
+
+    // getWebId
+
+    /////////////////////////////// DATAPROVIDERS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    ////////////////////////////// MOCKS AND STUBS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     ///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
