@@ -12,39 +12,11 @@ use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
  */
 class DPOPTest extends TestCase
 {
+    ////////////////////////////////// FIXTURES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     private $dpop;
     private $url;
     private $serverRequest;
-
-    protected function sign($dpop, $privateKey = null)
-    {
-        $keyPath = __DIR__ . '/../../fixtures/keys';
-        if (!$privateKey) {
-            $privateKey = file_get_contents($keyPath . '/private.key');
-        }
-
-        $signature = '';
-        $success = \openssl_sign(
-            Base64Url::encode(json_encode($dpop['header'])).'.'.
-            Base64Url::encode(json_encode($dpop['payload'])),
-            $signature,
-            $privateKey,
-            OPENSSL_ALGO_SHA256
-        );
-
-        if (!$success) {
-            throw new \Exception('unable to sign dpop');
-        }
-        $token = Base64Url::encode(json_encode($dpop['header'])).'.'.
-            Base64Url::encode(json_encode($dpop['payload'])).'.'.
-            Base64Url::encode($signature);
-
-        return array_merge($dpop, [
-            'signature' => $signature,
-            'token' => $token,
-        ]);
-    }
 
     protected function setUp(): void
     {
@@ -93,10 +65,12 @@ class DPOPTest extends TestCase
         return $keyInfo;
     }
 
+    /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
     /**
      * @covers ::validateDpop
      */
-    public function testWrongTyp(): void
+    public function testValidateDpopWithWrongTyp(): void
     {
         $this->dpop['header']['typ'] = 'jwt';
         $token = $this->sign($this->dpop);
@@ -111,7 +85,7 @@ class DPOPTest extends TestCase
     /**
      * @covers ::validateDpop
      */
-    public function testAlgNone(): void
+    public function testValidateDpopWithAlgNone(): void
     {
         $this->dpop['header']['alg'] = 'none';
         $token = $this->sign($this->dpop);
@@ -126,7 +100,7 @@ class DPOPTest extends TestCase
     /**
      * @covers ::validateDpop
      */
-    public function testWrongKey(): void
+    public function testValidateDpopWithWrongKey(): void
     {
         $theWrongKey = $this->getWrongKey();
         $this->dpop['header']['jwk'] = [
@@ -148,7 +122,7 @@ class DPOPTest extends TestCase
     /**
      * @covers ::validateDpop
      */
-    public function testCorrectToken(): void
+    public function testValidateDpopWithCorrectToken(): void
     {
         $token = $this->sign($this->dpop);
 
@@ -157,4 +131,34 @@ class DPOPTest extends TestCase
         $this->assertTrue($result);
     }
 
+    ///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    protected function sign($dpop, $privateKey = null)
+    {
+        $keyPath = __DIR__ . '/../../fixtures/keys';
+        if (!$privateKey) {
+            $privateKey = file_get_contents($keyPath . '/private.key');
+        }
+
+        $signature = '';
+        $success = \openssl_sign(
+            Base64Url::encode(json_encode($dpop['header'])).'.'.
+            Base64Url::encode(json_encode($dpop['payload'])),
+            $signature,
+            $privateKey,
+            OPENSSL_ALGO_SHA256
+        );
+
+        if (!$success) {
+            throw new \Exception('unable to sign dpop');
+        }
+        $token = Base64Url::encode(json_encode($dpop['header'])).'.'.
+            Base64Url::encode(json_encode($dpop['payload'])).'.'.
+            Base64Url::encode($signature);
+
+        return array_merge($dpop, [
+            'signature' => $signature,
+            'token' => $token,
+        ]);
+    }
 }
