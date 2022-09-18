@@ -26,7 +26,7 @@ class Jwks implements JsonSerializable
         return (string) json_encode($this);
     }
 
-    final public function jsonSerialize()
+    final public function jsonSerialize(): array
     {
         return $this->create();
     }
