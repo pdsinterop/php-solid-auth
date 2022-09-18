@@ -2,6 +2,7 @@
 
 namespace Pdsinterop\Solid\Auth\Utils;
 
+use Laminas\Diactoros\ServerRequest;
 use Pdsinterop\Solid\Auth\AbstractTestCase;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 
@@ -54,7 +55,7 @@ class DPOPTest extends AbstractTestCase
         ]);
 
         $this->url = 'https://www.example.com';
-        $this->serverRequest = new \Laminas\Diactoros\ServerRequest(array(),array(), $this->url);
+        $this->serverRequest = new ServerRequest(array(),array(), $this->url);
     }
 
     private function getWrongKey()
@@ -179,7 +180,62 @@ class DPOPTest extends AbstractTestCase
         $this->assertTrue($result);
     }
 
-    // getWebId
+    final public function testGetWebIdWithoutRequest(): void
+    {
+        $dpop = new DPop();
+
+        $this->expectArgumentCountError(1);
+
+        $dpop->getWebId();
+    }
+
+    /**
+     * @covers ::getWebId
+     */
+    final public function testGetWebIdWithoutHttpAuthorizationHeader(): void
+    {
+
+        $dpop = new DPop();
+
+        $request = new ServerRequest(array(),array(), $this->url);
+
+        $this->markTestIncomplete('The current result is not testable (Undefined array key "HTTP_AUTHORIZATION")');
+
+        $dpop->getWebId($request);
+    }
+
+    /**
+     * @covers ::getWebId
+     */
+    final public function testGetWebIdWithInvalidJwt(): void
+    {
+        $dpop = new DPop();
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid JWT token');
+
+        $request = new ServerRequest(array('HTTP_AUTHORIZATION' => 'Invalid JWT'),array(), $this->url);
+
+        $dpop->getWebId($request);
+    }
+
+
+    /**
+     * @covers ::getWebId
+     */
+    final public function testGetWebId(): void
+    {
+        $dpop = new DPop();
+
+        $token = $this->sign($this->dpop)['token'];
+
+        $request = new ServerRequest(array('HTTP_AUTHORIZATION' => $token),array(), $this->url);
+
+        $actual = $dpop->getWebId($request);
+        $expected = 'public';
+
+        $this->assertEquals($expected, $actual);
+    }
 
     /////////////////////////////// DATAPROVIDERS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 

@@ -35,6 +35,7 @@ class DPop {
 	 * @throws \Exception "Missng DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
 	 */
 	public function getWebId($request) {
+        // @FIXME: What happens when HTTP_AUTHORIZATION is not set?
 		$auth = explode(" ", $request->getServerParams()['HTTP_AUTHORIZATION']);
 		$jwt = $auth[1] ?? false;
 
