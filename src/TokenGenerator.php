@@ -48,7 +48,7 @@ class TokenGenerator
 		return $token->toString();
 	}
 
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey) {
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey, $now=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		$jwks = $this->getJwks();
@@ -56,7 +56,7 @@ class TokenGenerator
 
                 // Create JWT
                 $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
-                $now = new DateTimeImmutable();
+                $now = $now ?? new DateTimeImmutable();
                 $useAfter = $now->sub(new \DateInterval('PT1S'));
 
                 $expire = $now->add($this->validFor);

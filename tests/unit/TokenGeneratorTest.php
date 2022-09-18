@@ -347,17 +347,17 @@ JWT;
 
         $this->assertEquals('{"typ":"JWT","alg":"RS256","kid":"0c3932ca20f3a00ad2eb72035f6cc9cb"}', $header);
 
-        // @FIXME: Time-related values are unset, these do need to be tested.
-        unset($body['exp'], $body['iat'], $body['nbf']);
-
         $this->assertEquals([
             'aud' => 'mock clientId',
             'azp' => 'mock clientId',
             'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
             'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
             'cnf' => ["jkt" => "mock dpop"],
+            'exp' => -23225829903.789,
+            'iat' => -23225829904.789,
             'iss' => 'mock issuer',
             'jti' => '4dc20036dbd8313ed055',
+            'nbf' => -23225829905.789,
             'nonce' => 'mock nonce',
             'sub' => 'mock subject',
         ], $body);
