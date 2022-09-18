@@ -7,7 +7,6 @@ use Pdsinterop\Solid\Auth\Config\ServerInterface;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Utils\Base64Url;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 
 function time() { return 1234;}
 
@@ -18,7 +17,7 @@ function time() { return 1234;}
  *
  * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
  */
-class TokenGeneratorTest extends TestCase
+class TokenGeneratorTest extends AbstractTestCase
 {
     ////////////////////////////////// FIXTURES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -53,15 +52,6 @@ class TokenGeneratorTest extends TestCase
         ;
 
         return new TokenGenerator($this->mockConfig, $interval??$mockInterval);
-    }
-
-    ////////////////////////////// CUSTOM ASSERTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-    private function expectArgumentCountError(int $argumentCount): void
-    {
-        $this->expectException(\ArgumentCountError::class);
-
-        $this->expectExceptionMessageMatches('/Too few arguments [^,]+, ' . ($argumentCount - 1) . ' passed/');
     }
 
     /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
