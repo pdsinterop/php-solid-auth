@@ -6,7 +6,7 @@ namespace Pdsinterop\Solid\Auth;
  * This interface defines methods that a storage layer need to implement
  * in order to allow the JTI Service to validate JTI tokens.
  *
- * Such a token is a string between 12 and [..] characters of length.
+ * Such a token is a string between 12 and 256 characters of length.
  */
 interface JtiStorageInterface
 {

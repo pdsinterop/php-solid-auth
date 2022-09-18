@@ -10,8 +10,10 @@ use Pdsinterop\Solid\Auth\Enum\Jwk\Parameter as JwkParameter;
 /**
  * @coversDefaultClass \Pdsinterop\Solid\Auth\Utils\DPop
  * @covers ::<!public>
+ * @covers ::__construct
  *
  * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
+ * @uses \Pdsinterop\Solid\Auth\Utils\JtiValidator
  */
 class DPOPTest extends AbstractTestCase
 {
@@ -74,11 +76,22 @@ class DPOPTest extends AbstractTestCase
     /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     /**
-     * @testdox Dpop SHOULD be created WHEN instantiated without parameters
+     * @testdox Dpop SHOULD complain WHEN instantiated without JtiValidator
+     */
+    final public function testInstantiationWithoutJtiValidator(): void
+    {
+        $this->expectArgumentCountError(1);
+
+        new DPop();
+    }
+
+    /**
+     * @testdox Dpop SHOULD be created WHEN instantiated with JtiValidator
      */
     final public function testInstantiation(): void
     {
-        $actual = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $actual = new DPop($mockJtiValidator);
         $expected = DPop::class;
 
         $this->assertInstanceOf($expected, $actual);
@@ -93,7 +106,8 @@ class DPOPTest extends AbstractTestCase
     {
         $this->expectArgumentCountError(1);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $dpop->validateDpop();
     }
@@ -107,7 +121,8 @@ class DPOPTest extends AbstractTestCase
     {
         $this->expectArgumentCountError(2);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $dpop->validateDpop('mock jwt');
     }
@@ -122,7 +137,9 @@ class DPOPTest extends AbstractTestCase
         $this->dpop['header']['typ'] = 'jwt';
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
+
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('typ is not dpop+jwt');
 
@@ -139,7 +156,9 @@ class DPOPTest extends AbstractTestCase
         $this->dpop['header']['alg'] = 'none';
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
+
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('alg is none');
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
@@ -161,7 +180,9 @@ class DPOPTest extends AbstractTestCase
         ];
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
+
         try {
             $dpop->validateDpop($token['token'], $this->serverRequest);
         } catch(RequiredConstraintsViolated $e) {
@@ -177,10 +198,21 @@ class DPOPTest extends AbstractTestCase
      */
     public function testValidateDpopWithCorrectToken(): void
     {
+        $this->dpop['payload']['jti'] = 'mock jti';
+
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+
+        $mockJtiValidator->expects($this->once())
+            ->method('validate')
+            ->willReturn(true)
+        ;
+
+        $dpop = new DPop($mockJtiValidator);
+
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
+
         $this->assertTrue($result);
     }
 
@@ -191,7 +223,8 @@ class DPOPTest extends AbstractTestCase
      */
     final public function testGetWebIdWithoutRequest(): void
     {
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $this->expectArgumentCountError(1);
 
@@ -205,8 +238,8 @@ class DPOPTest extends AbstractTestCase
      */
     final public function testGetWebIdWithoutHttpAuthorizationHeader(): void
     {
-
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(),array(), $this->url);
 
@@ -222,7 +255,8 @@ class DPOPTest extends AbstractTestCase
      */
     final public function testGetWebIdWithIncorrectAuthHeaderFormat(): void
     {
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array('HTTP_AUTHORIZATION' => 'IncorrectAuthorizationFormat'),array(), $this->url);
 
@@ -239,7 +273,8 @@ class DPOPTest extends AbstractTestCase
      */
     final public function testGetWebIdWithInvalidJwt(): void
     {
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Invalid JWT token');
@@ -256,7 +291,8 @@ class DPOPTest extends AbstractTestCase
      */
     final public function testGetWebIdWithoutDpop(): void
     {
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array('HTTP_AUTHORIZATION' => "Basic YWxhZGRpbjpvcGVuc2VzYW1l"),array(), $this->url);
 
@@ -283,7 +319,8 @@ class DPOPTest extends AbstractTestCase
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -311,7 +348,8 @@ class DPOPTest extends AbstractTestCase
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -340,7 +378,8 @@ class DPOPTest extends AbstractTestCase
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -369,7 +408,8 @@ class DPOPTest extends AbstractTestCase
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -397,7 +437,8 @@ class DPOPTest extends AbstractTestCase
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -422,11 +463,19 @@ class DPOPTest extends AbstractTestCase
     {
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['cnf'] = ['jkt' => self::MOCK_THUMBPRINT];
+        $this->dpop['payload']['jti'] = 'mock jti';
         $this->dpop['payload']['sub'] = self::MOCK_SUBJECT;
 
         $token = $this->sign($this->dpop);
 
-        $dpop = new DPop();
+        $mockJtiValidator = $this->createMockJtiValidator();
+
+        $mockJtiValidator->expects($this->once())
+            ->method('validate')
+            ->willReturn(true)
+        ;
+
+        $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
@@ -436,6 +485,17 @@ class DPOPTest extends AbstractTestCase
         $actual = $dpop->getWebId($request);
 
         $this->assertEquals(self::MOCK_SUBJECT, $actual);
+    }
+
+    ////////////////////////////// MOCKS AND STUBS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+    private function createMockJtiValidator()
+    {
+        $mockJtiValidator = $this->getMockBuilder(JtiValidator::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        return $mockJtiValidator;
     }
 
     ///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\

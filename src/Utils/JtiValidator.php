@@ -73,7 +73,9 @@ class JtiValidator
 
         return $isValid;
     }
+
     ////////////////////////////// UTILITY METHODS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
     private function shouldRotate(): bool
     {
         $shouldRotate = false;

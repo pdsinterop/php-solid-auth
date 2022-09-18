@@ -18,6 +18,13 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
  */
 class DPop {
 
+    private JtiValidator $jtiValidator;
+
+    public function __construct(JtiValidator $jtiValidator)
+    {
+        $this->jtiValidator = $jtiValidator;
+    }
+
 	/**
 	 * This method fetches the WebId from a request and verifies
 	 * that the request has a valid DPoP token that matches
@@ -223,13 +230,20 @@ class DPop {
 
 		$leeway = new \DateInterval("PT60S"); // allow 60 seconds clock skew
 		$clock = SystemClock::fromUTC();
-		$validationsConstraints[] = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
+		$validationConstraints[] = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
 		if (!$jwtConfig->validator()->validate($dpop, ...$validationConstraints)) {
 			$jwtConfig->validator()->assert($dpop, ...$validationConstraints); // throws an explanatory exception
 		}
 
 		// 9.  that, within a reasonable consideration of accuracy and resource utilization, a JWT with the same "jti" value has not been received previously (see Section 9.1).
-		// TODO: Check if we know the jti;
+		$jti = $dpop->claims()->get("jti");
+		if ($jti === null) {
+			throw new \Exception("jti is missing");
+		}
+		$isJtiValid = $this->jtiValidator->validate($jti, (string) $request->getUri());
+		if (! $isJtiValid) {
+			throw new \Exception("jti is invalid");
+		}
 
 		// 10. that, if used with an access token, it also contains the 'ath' claim, with a hash of the access token
 		// TODO: implement
@@ -245,11 +259,10 @@ class DPop {
 			throw new \Exception("Invalid JWT token", 409, $e);
 		}
 
-        // @FIXME: What happens when "sub" is not provided?
 		$sub = $jwt->claims()->get("sub");
-        if ($sub === null) {
-            throw new \Exception('Invalid token: Missing "SUB');
-        }
+		if ($sub === null) {
+			throw new \Exception('Invalid token: Missing "SUB');
+		}
 		return $sub;
 	}
 }
