@@ -6,7 +6,7 @@ use JsonSerializable;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Exception\LogicException;
 
-class Server implements JsonSerializable
+class Server implements ServerInterface
 {
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
