@@ -2,18 +2,14 @@
 
 namespace Pdsinterop\Solid\Auth\Utils;
 
-use Lcobucci\JWT\Configuration;
-use Lcobucci\Clock\SystemClock;
-use DateTimeImmutable;
-use DateInterval;
-use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
-use Lcobucci\JWT\Validation\Constraint\SignedWith;
-
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\Util\ECKey;
 use Jose\Component\Core\Util\RSAKey;
+use Lcobucci\Clock\SystemClock;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
 
 /**
  * This class contains code to fetch the WebId from a request
@@ -44,12 +40,13 @@ class DPop {
 			$dpop = $request->getServerParams()['HTTP_DPOP'];
 			//@FIXME: check that there is just one DPoP token in the request
 			if ($dpop) {
-				$dpopKey = $this->getDpopKey($dpop, $request);
 				try {
-                    // @FIXME: What happens when DPOP is not valid?
+					$dpopKey = $this->getDpopKey($dpop, $request);
 					$this->validateJwtDpop($jwt, $dpopKey);
-				} catch (Lcobucci\JWT\Validation\RequiredConstraintsViolated $e) {
-					throw new \Exception("Invalid token", $e);
+				} catch (\Lcobucci\JWT\Validation\RequiredConstraintsViolated $e) {
+					throw new \Exception("Invalid token: {$e->getMessage()}", 0, $e);
+				} catch (\Exception $e) {
+					throw new \Exception("Invalid token: {$e->getMessage()}", 0, $e);
 				}
 			} else {
 				throw new \Exception("Missing DPoP token");
@@ -84,19 +81,28 @@ class DPop {
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
 
-        // @FIXME: What happens when 'kid' is not set? 'Undefined array key "kid"'
+		if (isset($jwk['kid']) === false) {
+			throw new \Exception('Key ID is missing from JWK header');
+		}
+
 		return $jwk['kid'];
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$jwt = $jwtConfig->parser()->parse($jwt);
-        // @FIXME: What happens if CNF is not set?
 		$cnf = $jwt->claims()->get("cnf");
 
-        // @FIXME: What happens if JKT is not set?
-		if ($cnf['jkt'] == $dpopKey) {
-			return true;
+		if ($cnf === null) {
+			throw new \Exception('JWT Confirmation claim (cnf) is missing');
+		}
+
+		if (isset($cnf['jkt']) === false) {
+			throw new \Exception('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
+		}
+
+		if ($cnf['jkt'] !== $dpopKey) {
+			throw new \Exception('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
 		}
 
 		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
@@ -241,6 +247,9 @@ class DPop {
 
         // @FIXME: What happens when "sub" is not provided?
 		$sub = $jwt->claims()->get("sub");
+        if ($sub === null) {
+            throw new \Exception('Invalid token: Missing "SUB');
+        }
 		return $sub;
 	}
 }
