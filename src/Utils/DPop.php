@@ -40,11 +40,13 @@ class DPop {
 		$jwt = $auth[1] ?? false;
 
 		if (strtolower($auth[0]) == "dpop") {
+            // @FIXME: What happens when HTTP_DPOP is not set?
 			$dpop = $request->getServerParams()['HTTP_DPOP'];
 			//@FIXME: check that there is just one DPoP token in the request
 			if ($dpop) {
 				$dpopKey = $this->getDpopKey($dpop, $request);
 				try {
+                    // @FIXME: What happens when DPOP is not valid?
 					$this->validateJwtDpop($jwt, $dpopKey);
 				} catch (Lcobucci\JWT\Validation\RequiredConstraintsViolated $e) {
 					throw new \Exception("Invalid token", $e);
@@ -82,14 +84,17 @@ class DPop {
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
 
+        // @FIXME: What happens when 'kid' is not set? 'Undefined array key "kid"'
 		return $jwk['kid'];
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		$jwt = $jwtConfig->parser()->parse($jwt);
+        // @FIXME: What happens if CNF is not set?
 		$cnf = $jwt->claims()->get("cnf");
 
+        // @FIXME: What happens if JKT is not set?
 		if ($cnf['jkt'] == $dpopKey) {
 			return true;
 		}
@@ -234,6 +239,7 @@ class DPop {
 			throw new \Exception("Invalid JWT token", 409, $e);
 		}
 
+        // @FIXME: What happens when "sub" is not provided?
 		$sub = $jwt->claims()->get("sub");
 		return $sub;
 	}
