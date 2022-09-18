@@ -230,7 +230,7 @@ class DPop {
 		try {
 			$jwt = $jwtConfig->parser()->parse($jwt);
 		} catch(\Exception $e) {
-			return $this->server->getResponse()->withStatus(409, "Invalid JWT token");
+			throw new \Exception("Invalid JWT token", 409, $e);
 		}
 
 		$sub = $jwt->claims()->get("sub");
