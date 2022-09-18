@@ -4,8 +4,8 @@ namespace Pdsinterop\Solid\Auth;
 
 use Pdsinterop\Solid\Auth\Config\Client;
 use Pdsinterop\Solid\Auth\Config\Expiration;
-use Pdsinterop\Solid\Auth\Config\Keys;
-use Pdsinterop\Solid\Auth\Config\Server;
+use Pdsinterop\Solid\Auth\Config\KeysInterface as Keys;
+use Pdsinterop\Solid\Auth\Config\ServerInterface as Server;
 
 class Config
 {
