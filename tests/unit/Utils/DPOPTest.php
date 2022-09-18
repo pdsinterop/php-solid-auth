@@ -68,6 +68,8 @@ class DPOPTest extends TestCase
     /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     /**
+     * @testdox Dpop SHOULD complain WHEN asked to validate a DPOP with wrong header type
+     *
      * @covers ::validateDpop
      */
     public function testValidateDpopWithWrongTyp(): void
@@ -83,6 +85,8 @@ class DPOPTest extends TestCase
     }
 
     /**
+     * @testdox Dpop SHOULD complain WHEN asked to validate a DPOP with encryption algorithm "none"
+     *
      * @covers ::validateDpop
      */
     public function testValidateDpopWithAlgNone(): void
@@ -98,6 +102,8 @@ class DPOPTest extends TestCase
     }
 
     /**
+     * @testdox Dpop SHOULD complain WHEN asked to validate a DPOP with mismatched public key
+     *
      * @covers ::validateDpop
      */
     public function testValidateDpopWithWrongKey(): void
@@ -120,6 +126,8 @@ class DPOPTest extends TestCase
     }
 
     /**
+     * @testdox Dpop SHOULD return true WHEN asked to validate a valid DPOP
+     *
      * @covers ::validateDpop
      */
     public function testValidateDpopWithCorrectToken(): void
