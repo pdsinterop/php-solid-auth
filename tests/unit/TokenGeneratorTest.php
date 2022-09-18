@@ -79,6 +79,22 @@ class TokenGeneratorTest extends TestCase
     }
 
     /**
+     * @testdox Token Generator SHOULD complain WHEN instantiated without validity period
+     *
+     * @coversNothing
+     */
+    final public function testInstantiateWithoutValidFor(): void
+    {
+        $this->expectArgumentCountError(2);
+
+        $mockConfig = $this->getMockBuilder(Config::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        new TokenGenerator($mockConfig);
+    }
+
+    /**
      * @testdox Token Generator SHOULD be created WHEN instantiated with Config and validity period
      *
      * @covers ::__construct

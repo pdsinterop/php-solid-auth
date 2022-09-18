@@ -18,15 +18,19 @@ class TokenGenerator
 
     use CryptTrait;
 
-    /** @var Config */
-    public $config;
+    public Config $config;
+
+    private \DateInterval $validFor;
 
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     final public function __construct(
-        Config $config
+        Config $config,
+        \DateInterval $validFor
     ) {
         $this->config = $config;
+        $this->validFor = $validFor;
+
         $this->setEncryptionKey($this->config->getKeys()->getEncryptionKey());
     }
 
@@ -54,7 +58,8 @@ class TokenGenerator
                 $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
                 $now = new DateTimeImmutable();
                 $useAfter = $now->sub(new \DateInterval('PT1S'));
-                $expire = $now->add(new \DateInterval('PT' . 14*24*60*60 . 'S'));
+
+                $expire = $now->add($this->validFor);
 
                 $token = $jwtConfig->builder()
                         ->issuedBy($issuer)
