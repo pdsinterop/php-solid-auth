@@ -255,6 +255,26 @@ JWT;
     }
 
     /**
+     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without dpopKey
+     *
+     * @covers ::generateIdToken
+     */
+    final public function testIdTokenGenerationWithoutDpopKey(): void
+    {
+        $tokenGenerator = $this->createTokenGenerator();
+
+        $this->expectArgumentCountError(6);
+
+        $tokenGenerator->generateIdToken(
+            'mock access token',
+            'mock clientId',
+            'mock subject',
+            'mock nonce',
+            'mock private key'
+        );
+    }
+
+    /**
      * @testdox Token Generator SHOULD return a IdToken WHEN asked to generate a IdToken with clientId and privateKey
      *
      * @covers ::generateIdToken

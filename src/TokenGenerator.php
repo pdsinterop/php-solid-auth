@@ -44,7 +44,7 @@ class TokenGenerator
 		return $token->toString();
 	}
 
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		$jwks = $this->getJwks();
