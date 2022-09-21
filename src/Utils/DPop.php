@@ -48,24 +48,9 @@ class DPop {
 	public function getWebId($request) {
 		$serverParams = $request->getServerParams();
 
-		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
-			throw new AuthorizationHeaderException("Authorization Header missing");
-		}
+		$this->validateRequestHeaders($serverParams);
 
-		if (str_contains($serverParams['HTTP_AUTHORIZATION'], ' ') === false) {
-			throw new AuthorizationHeaderException("Authorization Header does not contain parameters");
-		}
-
-		[$authScheme, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
-		$authScheme = strtolower($authScheme);
-
-		if ($authScheme !== "dpop") {
-			throw new AuthorizationHeaderException('Only "dpop" authorization scheme is supported');
-		}
-
-		if (isset($serverParams['HTTP_DPOP']) === false) {
-			throw new AuthorizationHeaderException("Missing DPoP token");
-		}
+		[, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
 
 		$dpop = $serverParams['HTTP_DPOP'];
 
@@ -286,5 +271,23 @@ class DPop {
 			throw new InvalidTokenException('Missing "SUB"');
 		}
 		return $sub;
+	}
+
+	private function validateRequestHeaders($serverParams) {
+		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
+			throw new AuthorizationHeaderException("Authorization Header missing");
+		}
+
+		if (str_contains($serverParams['HTTP_AUTHORIZATION'], ' ') === false) {
+			throw new AuthorizationHeaderException("Authorization Header does not contain parameters");
+		}
+
+		if (str_starts_with(strtolower($serverParams['HTTP_AUTHORIZATION']), 'dpop') === false) {
+			throw new AuthorizationHeaderException('Only "dpop" authorization scheme is supported');
+		}
+
+		if (isset($serverParams['HTTP_DPOP']) === false) {
+			throw new AuthorizationHeaderException("Missing DPoP token");
+		}
 	}
 }
