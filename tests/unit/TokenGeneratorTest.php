@@ -179,10 +179,12 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $actual = $tokenGenerator->generateRegistrationAccessToken('mock client ID', $privateKey);
 
-        $expected = <<<JWT
-eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJtb2NrIGlzc3VlciIsImF1ZCI6Im1vY2sgY2xpZW50IElEIiwic3ViIjoibW9jayBjbGllbnQgSUQifQ.hNpQ3R3krigm6iQ-wWXDzy1bq_txFAlymXJZ4VZd9otTqSNZ8qWB1b2MW6RnFjwlTJrbPzD-yksAn0R7Wwhl5NYnvm-YNlQ6mqKybo-DIfFV6uw6b3b8R4BmfcxVhHuiGDYbBvKiO955KGA4t8FLlBBVLPdREz5w-LYRndDSdho3E62eKX5eKndufPRBOO8bzBJBSbrFLf6kj1hape9uyLvNEmeP9Rq26K98GmDRN-BxAoQlC_EodIgqajqETtKSzsf5bBasu6EpSOOOFGRijS8RCqBt4f1Kkb5ltE_t9TBp0ceBSOB6lGJEShieulEf5prBwLrYMkSFCVTpn5Gwow
-JWT;
-        $this->assertEquals($expected, $actual);
+        $expected = [
+            '{"typ":"JWT","alg":"RS256"}',
+            '{"iss":"mock issuer","aud":"mock client ID","sub":"mock client ID"}',
+        ];
+
+        $this->assertJwtEquals($expected, $actual);
     }
 
     /**
