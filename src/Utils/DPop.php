@@ -44,26 +44,40 @@ class DPop {
 	 * @throws Exception "Missing DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
 	 */
 	public function getWebId($request) {
-        // @FIXME: What happens when HTTP_AUTHORIZATION is not set?
-		$auth = explode(" ", $request->getServerParams()['HTTP_AUTHORIZATION']);
-		$jwt = $auth[1] ?? false;
+		$serverParams = $request->getServerParams();
 
-		if (strtolower($auth[0]) == "dpop") {
-            // @FIXME: What happens when HTTP_DPOP is not set?
-			$dpop = $request->getServerParams()['HTTP_DPOP'];
-			//@FIXME: check that there is just one DPoP token in the request
-			if ($dpop) {
-				try {
-					$dpopKey = $this->getDpopKey($dpop, $request);
-					$this->validateJwtDpop($jwt, $dpopKey);
-				} catch (\Lcobucci\JWT\Validation\RequiredConstraintsViolated $e) {
-					throw new \Exception("Invalid token: {$e->getMessage()}", 0, $e);
-				} catch (\Exception $e) {
-					throw new \Exception("Invalid token: {$e->getMessage()}", 0, $e);
-				}
-			} else {
-				throw new \Exception("Missing DPoP token");
-			}
+		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
+			throw new Exception("Authorization Header missing");
+		}
+
+		if (str_contains($serverParams['HTTP_AUTHORIZATION'], ' ') === false) {
+			throw new Exception("Authorization Header does not contain parameters");
+		}
+
+		[$authScheme, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
+		$authScheme = strtolower($authScheme);
+
+		if ($authScheme !== "dpop") {
+			throw new Exception('Only "dpop" authorization scheme is supported');
+		}
+
+		if (isset($serverParams['HTTP_DPOP']) === false) {
+			throw new Exception("Missing DPoP token");
+		}
+
+		$dpop = $serverParams['HTTP_DPOP'];
+
+		//@FIXME: check that there is just one DPoP token in the request
+		try {
+			$dpopKey = $this->getDpopKey($dpop, $request);
+		} catch (InvalidTokenStructure $e) {
+			throw new Exception("Invalid JWT token: {$e->getMessage()}", 0, $e);
+		}
+
+		try {
+			$this->validateJwtDpop($jwt, $dpopKey);
+		} catch (RequiredConstraintsViolated $e) {
+			throw new Exception("Invalid token: {$e->getMessage()}", 0, $e);
 		}
 
 		if ($jwt) {
