@@ -104,7 +104,7 @@ class DPop {
 		$this->validateDpop($dpop, $request);
 
 		// 1.  the string value is a well-formed JWT,
-		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$jwtConfig = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
 
@@ -116,7 +116,7 @@ class DPop {
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
-		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$jwtConfig = Configuration::forUnsecuredSigner();
 		$jwt = $jwtConfig->parser()->parse($jwt);
 		$cnf = $jwt->claims()->get("cnf");
 
@@ -174,7 +174,7 @@ class DPop {
 			       claim, with a hash of the access token
 		*/
 		// 1.  the string value is a well-formed JWT,
-		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$jwtConfig = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
 
 	    // 2.  all required claims are contained in the JWT,
@@ -272,7 +272,7 @@ class DPop {
 	}
 
 	private function getSubjectFromJwt($jwt) {
-		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
+		$jwtConfig = Configuration::forUnsecuredSigner();
 		try {
 			$jwt = $jwtConfig->parser()->parse($jwt);
 		} catch(Exception $e) {
