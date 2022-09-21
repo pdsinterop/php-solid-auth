@@ -2,14 +2,20 @@
 
 namespace Pdsinterop\Solid\Auth\Utils;
 
+use DateInterval;
+use Exception;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\Util\ECKey;
 use Jose\Component\Core\Util\RSAKey;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Ecdsa\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * This class contains code to fetch the WebId from a request
@@ -30,12 +36,12 @@ class DPop {
 	 * that the request has a valid DPoP token that matches
 	 * the access token.
 	 *
-	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 * @param ServerRequestInterface $request Server Request
 	 *
 	 * @return string the WebId, or "public" if no WebId is found
 	 *
-	 * @throws \Exception "Invalid token" when the DPoP token is invalid
-	 * @throws \Exception "Missng DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
+	 * @throws Exception "Invalid token" when the DPoP token is invalid
+	 * @throws Exception "Missing DPoP token" when the DPoP token is missing, but the Authorisation header in the request specifies it
 	 */
 	public function getWebId($request) {
         // @FIXME: What happens when HTTP_AUTHORIZATION is not set?
@@ -73,12 +79,12 @@ class DPop {
 	 * Returns the "kid" from the "jwk" header in the DPoP token.
 	 * The DPoP token must be valid.
 	 *
-	 * @param  string $dpop    The DPoP token
-	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 * @param string $dpop The DPoP token
+	 * @param ServerRequestInterface $request Server Request
 	 *
 	 * @return string          the "kid" from the "jwk" header in the DPoP token.
 	 *
-	 * @throws Lcobucci\JWT\Validation\RequiredConstraintsViolated
+	 * @throws RequiredConstraintsViolated
 	 */
 	public function getDpopKey($dpop, $request) {
 		$this->validateDpop($dpop, $request);
@@ -89,7 +95,7 @@ class DPop {
 		$jwk  = $dpop->headers()->get("jwk");
 
 		if (isset($jwk['kid']) === false) {
-			throw new \Exception('Key ID is missing from JWK header');
+			throw new Exception('Key ID is missing from JWK header');
 		}
 
 		return $jwk['kid'];
@@ -101,15 +107,15 @@ class DPop {
 		$cnf = $jwt->claims()->get("cnf");
 
 		if ($cnf === null) {
-			throw new \Exception('JWT Confirmation claim (cnf) is missing');
+			throw new Exception('JWT Confirmation claim (cnf) is missing');
 		}
 
 		if (isset($cnf['jkt']) === false) {
-			throw new \Exception('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
+			throw new Exception('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
 		}
 
 		if ($cnf['jkt'] !== $dpopKey) {
-			throw new \Exception('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
+			throw new Exception('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
 		}
 
 		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
@@ -120,12 +126,12 @@ class DPop {
 	 * Validates that the DPOP token matches all requirements from 
 	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-4.2
 	 *
-	 * @param  string $dpop    The DPOP token
-	 * @param  Psr\Http\Message\ServerRequestInterface $request Server Request
+	 * @param string $dpop The DPOP token
+	 * @param ServerRequestInterface $request Server Request
 	 *
-	 * @return bool            True if the DPOP token is valid, false otherwise
+	 * @return bool True if the DPOP token is valid, false otherwise
 	 *
-	 * @throws Lcobucci\JWT\Validation\RequiredConstraintsViolated
+	 * @throws RequiredConstraintsViolated
 	 */
 	public function validateDpop($dpop, $request) {
 		/*
@@ -160,48 +166,48 @@ class DPop {
 	    // 2.  all required claims are contained in the JWT,
 		$htm = $dpop->claims()->get("htm"); // http method
 		if (!$htm) {
-			throw new \Exception("missing htm");
+			throw new Exception("missing htm");
 		}
 		$htu = $dpop->claims()->get("htu"); // http uri
 		if (!$htu) {
-			throw new \Exception("missing htu");
+			throw new Exception("missing htu");
 		}
 		$typ = $dpop->headers()->get("typ");
 		if (!$typ) {
-			throw new \Exception("missing typ");
+			throw new Exception("missing typ");
 		}
 		$alg = $dpop->headers()->get("alg");
 		if (!$alg) {
-			throw new \Exception("missing alg");
+			throw new Exception("missing alg");
 		}
 
 		// 3.  the "typ" field in the header has the value "dpop+jwt",
 		if ($typ != "dpop+jwt") {
-			throw new \Exception("typ is not dpop+jwt");
+			throw new Exception("typ is not dpop+jwt");
 		}
 
 		// 4.  the algorithm in the header of the JWT indicates an asymmetric 
 		//	   digital signature algorithm, is not "none", is supported by the
 		//	   application, and is deemed secure,   
 		if ($alg == "none") {
-			throw new \Exception("alg is none");
+			throw new Exception("alg is none");
 		}
 
 		// 5.  that the JWT is signed using the public key contained in the
 		//     "jwk" header of the JWT,
 		$jwk = $dpop->headers()->get("jwk");
-		$webTokenJwk = \Jose\Component\Core\JWK::createFromJson(json_encode($jwk));
+		$webTokenJwk = JWK::createFromJson(json_encode($jwk));
 		switch ($alg) {
 			case "RS256":
-				$pem = \Jose\Component\Core\Util\RSAKey::createFromJWK($webTokenJwk)->toPEM();
+				$pem = RSAKey::createFromJWK($webTokenJwk)->toPEM();
 				$signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
 			break;
 			case "ES256":
-				$pem = \Jose\Component\Core\Util\ECKey::convertToPEM($webTokenJwk);
-                $signer = \Lcobucci\JWT\Signer\Ecdsa\Sha256::create();
+				$pem = ECKey::convertToPEM($webTokenJwk);
+                $signer = Sha256::create();
 			break;
 			default:
-				throw new \Exception("unsupported algorithm");
+				throw new Exception("unsupported algorithm");
 			break;
 		}
 		$key = InMemory::plainText($pem);
@@ -211,7 +217,7 @@ class DPop {
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
 		//	   in which the JWT was received (case-insensitive),
 		if (strtolower($htm) != strtolower($request->getMethod())) {
-			throw new \Exception("htm http method is invalid");
+			throw new Exception("htm http method is invalid");
 		}
 
 		// 7.  the "htu" claims matches the HTTP URI value for the HTTP request
@@ -223,12 +229,12 @@ class DPop {
 		//error_log("REQUESTED HTU $htu");
 		//error_log("REQUESTED PATH $requestedPath");
 		if ($htu != $requestedPath) { 
-			throw new \Exception("htu does not match requested path");
+			throw new Exception("htu does not match requested path");
 		}
 
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
 
-		$leeway = new \DateInterval("PT60S"); // allow 60 seconds clock skew
+		$leeway = new DateInterval("PT60S"); // allow 60 seconds clock skew
 		$clock = SystemClock::fromUTC();
 		$validationConstraints[] = new LooseValidAt($clock, $leeway); // It will use the current time to validate (iat, nbf and exp)
 		if (!$jwtConfig->validator()->validate($dpop, ...$validationConstraints)) {
@@ -238,11 +244,11 @@ class DPop {
 		// 9.  that, within a reasonable consideration of accuracy and resource utilization, a JWT with the same "jti" value has not been received previously (see Section 9.1).
 		$jti = $dpop->claims()->get("jti");
 		if ($jti === null) {
-			throw new \Exception("jti is missing");
+			throw new Exception("jti is missing");
 		}
 		$isJtiValid = $this->jtiValidator->validate($jti, (string) $request->getUri());
 		if (! $isJtiValid) {
-			throw new \Exception("jti is invalid");
+			throw new Exception("jti is invalid");
 		}
 
 		// 10. that, if used with an access token, it also contains the 'ath' claim, with a hash of the access token
@@ -255,13 +261,13 @@ class DPop {
 		$jwtConfig = $configuration = Configuration::forUnsecuredSigner();
 		try {
 			$jwt = $jwtConfig->parser()->parse($jwt);
-		} catch(\Exception $e) {
-			throw new \Exception("Invalid JWT token", 409, $e);
+		} catch(Exception $e) {
+			throw new Exception("Invalid JWT token", 409, $e);
 		}
 
 		$sub = $jwt->claims()->get("sub");
 		if ($sub === null) {
-			throw new \Exception('Invalid token: Missing "SUB');
+			throw new Exception('Missing "SUB"');
 		}
 		return $sub;
 	}
