@@ -6,6 +6,8 @@ use Laminas\Diactoros\ServerRequest;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Pdsinterop\Solid\Auth\AbstractTestCase;
 use Pdsinterop\Solid\Auth\Enum\Jwk\Parameter as JwkParameter;
+use Pdsinterop\Solid\Auth\Exception\AuthorizationHeaderException;
+use Pdsinterop\Solid\Auth\Exception\InvalidTokenException;
 
 /**
  * @coversDefaultClass \Pdsinterop\Solid\Auth\Utils\DPop
@@ -140,7 +142,7 @@ class DPOPTest extends AbstractTestCase
         $mockJtiValidator = $this->createMockJtiValidator();
         $dpop = new DPop($mockJtiValidator);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('typ is not dpop+jwt');
 
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
@@ -159,7 +161,7 @@ class DPOPTest extends AbstractTestCase
         $mockJtiValidator = $this->createMockJtiValidator();
         $dpop = new DPop($mockJtiValidator);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('alg is none');
         $result = $dpop->validateDpop($token['token'], $this->serverRequest);
         $this->assertTrue($result);
@@ -243,7 +245,7 @@ class DPOPTest extends AbstractTestCase
 
         $request = new ServerRequest(array(),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(AuthorizationHeaderException::class);
         $this->expectExceptionMessage('Authorization Header missing');
 
         $dpop->getWebId($request);
@@ -261,7 +263,7 @@ class DPOPTest extends AbstractTestCase
 
         $request = new ServerRequest(array('HTTP_AUTHORIZATION' => 'IncorrectAuthorizationFormat'),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(AuthorizationHeaderException::class);
         $this->expectExceptionMessage('Authorization Header does not contain parameters');
 
         $dpop->getWebId($request);
@@ -279,7 +281,7 @@ class DPOPTest extends AbstractTestCase
         $mockJtiValidator = $this->createMockJtiValidator();
         $dpop = new DPop($mockJtiValidator);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('Invalid JWT token');
 
         $request = new ServerRequest(array(
@@ -300,7 +302,7 @@ class DPOPTest extends AbstractTestCase
         $mockJtiValidator = $this->createMockJtiValidator();
         $dpop = new DPop($mockJtiValidator);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(AuthorizationHeaderException::class);
         $this->expectExceptionMessage('Only "dpop" authorization scheme is supported');
 
         $request = new ServerRequest(array('HTTP_AUTHORIZATION' => "Basic YWxhZGRpbjpvcGVuc2VzYW1l"),array(), $this->url);
@@ -338,7 +340,7 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('Key ID is missing from JWK header');
 
         $dpop->getWebId($request);
@@ -374,7 +376,7 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('JWT Confirmation claim (cnf) is missing');
 
         $dpop->getWebId($request);
@@ -409,7 +411,7 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
 
         $dpop->getWebId($request);
@@ -444,7 +446,7 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
 
         $dpop->getWebId($request);
@@ -478,7 +480,7 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InvalidTokenException::class);
         $this->expectExceptionMessage('Missing "SUB"');
 
         $dpop->getWebId($request);

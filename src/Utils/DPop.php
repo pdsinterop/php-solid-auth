@@ -15,6 +15,8 @@ use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
+use Pdsinterop\Solid\Auth\Exception\AuthorizationHeaderException;
+use Pdsinterop\Solid\Auth\Exception\InvalidTokenException;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -47,22 +49,22 @@ class DPop {
 		$serverParams = $request->getServerParams();
 
 		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
-			throw new Exception("Authorization Header missing");
+			throw new AuthorizationHeaderException("Authorization Header missing");
 		}
 
 		if (str_contains($serverParams['HTTP_AUTHORIZATION'], ' ') === false) {
-			throw new Exception("Authorization Header does not contain parameters");
+			throw new AuthorizationHeaderException("Authorization Header does not contain parameters");
 		}
 
 		[$authScheme, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
 		$authScheme = strtolower($authScheme);
 
 		if ($authScheme !== "dpop") {
-			throw new Exception('Only "dpop" authorization scheme is supported');
+			throw new AuthorizationHeaderException('Only "dpop" authorization scheme is supported');
 		}
 
 		if (isset($serverParams['HTTP_DPOP']) === false) {
-			throw new Exception("Missing DPoP token");
+			throw new AuthorizationHeaderException("Missing DPoP token");
 		}
 
 		$dpop = $serverParams['HTTP_DPOP'];
@@ -71,13 +73,13 @@ class DPop {
 		try {
 			$dpopKey = $this->getDpopKey($dpop, $request);
 		} catch (InvalidTokenStructure $e) {
-			throw new Exception("Invalid JWT token: {$e->getMessage()}", 0, $e);
+			throw new InvalidTokenException("Invalid JWT token: {$e->getMessage()}", 0, $e);
 		}
 
 		try {
 			$this->validateJwtDpop($jwt, $dpopKey);
 		} catch (RequiredConstraintsViolated $e) {
-			throw new Exception("Invalid token: {$e->getMessage()}", 0, $e);
+			throw new InvalidTokenException($e->getMessage(), 0, $e);
 		}
 
 		if ($jwt) {
@@ -109,7 +111,7 @@ class DPop {
 		$jwk  = $dpop->headers()->get("jwk");
 
 		if (isset($jwk['kid']) === false) {
-			throw new Exception('Key ID is missing from JWK header');
+			throw new InvalidTokenException('Key ID is missing from JWK header');
 		}
 
 		return $jwk['kid'];
@@ -121,15 +123,15 @@ class DPop {
 		$cnf = $jwt->claims()->get("cnf");
 
 		if ($cnf === null) {
-			throw new Exception('JWT Confirmation claim (cnf) is missing');
+			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing');
 		}
 
 		if (isset($cnf['jkt']) === false) {
-			throw new Exception('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
+			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
 		}
 
 		if ($cnf['jkt'] !== $dpopKey) {
-			throw new Exception('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
+			throw new InvalidTokenException('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
 		}
 
 		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
@@ -180,31 +182,31 @@ class DPop {
 	    // 2.  all required claims are contained in the JWT,
 		$htm = $dpop->claims()->get("htm"); // http method
 		if (!$htm) {
-			throw new Exception("missing htm");
+			throw new InvalidTokenException("missing htm");
 		}
 		$htu = $dpop->claims()->get("htu"); // http uri
 		if (!$htu) {
-			throw new Exception("missing htu");
+			throw new InvalidTokenException("missing htu");
 		}
 		$typ = $dpop->headers()->get("typ");
 		if (!$typ) {
-			throw new Exception("missing typ");
+			throw new InvalidTokenException("missing typ");
 		}
 		$alg = $dpop->headers()->get("alg");
 		if (!$alg) {
-			throw new Exception("missing alg");
+			throw new InvalidTokenException("missing alg");
 		}
 
 		// 3.  the "typ" field in the header has the value "dpop+jwt",
 		if ($typ != "dpop+jwt") {
-			throw new Exception("typ is not dpop+jwt");
+			throw new InvalidTokenException("typ is not dpop+jwt");
 		}
 
 		// 4.  the algorithm in the header of the JWT indicates an asymmetric 
 		//	   digital signature algorithm, is not "none", is supported by the
 		//	   application, and is deemed secure,   
 		if ($alg == "none") {
-			throw new Exception("alg is none");
+			throw new InvalidTokenException("alg is none");
 		}
 
 		// 5.  that the JWT is signed using the public key contained in the
@@ -221,7 +223,7 @@ class DPop {
                 $signer = Sha256::create();
 			break;
 			default:
-				throw new Exception("unsupported algorithm");
+				throw new InvalidTokenException("unsupported algorithm");
 			break;
 		}
 		$key = InMemory::plainText($pem);
@@ -231,7 +233,7 @@ class DPop {
 		// 6.  the "htm" claim matches the HTTP method value of the HTTP request
 		//	   in which the JWT was received (case-insensitive),
 		if (strtolower($htm) != strtolower($request->getMethod())) {
-			throw new Exception("htm http method is invalid");
+			throw new InvalidTokenException("htm http method is invalid");
 		}
 
 		// 7.  the "htu" claims matches the HTTP URI value for the HTTP request
@@ -243,7 +245,7 @@ class DPop {
 		//error_log("REQUESTED HTU $htu");
 		//error_log("REQUESTED PATH $requestedPath");
 		if ($htu != $requestedPath) { 
-			throw new Exception("htu does not match requested path");
+			throw new InvalidTokenException("htu does not match requested path");
 		}
 
 		// 8.  the token was issued within an acceptable timeframe (see Section 9.1), and
@@ -258,11 +260,11 @@ class DPop {
 		// 9.  that, within a reasonable consideration of accuracy and resource utilization, a JWT with the same "jti" value has not been received previously (see Section 9.1).
 		$jti = $dpop->claims()->get("jti");
 		if ($jti === null) {
-			throw new Exception("jti is missing");
+			throw new InvalidTokenException("jti is missing");
 		}
 		$isJtiValid = $this->jtiValidator->validate($jti, (string) $request->getUri());
 		if (! $isJtiValid) {
-			throw new Exception("jti is invalid");
+			throw new InvalidTokenException("jti is invalid");
 		}
 
 		// 10. that, if used with an access token, it also contains the 'ath' claim, with a hash of the access token
@@ -276,12 +278,12 @@ class DPop {
 		try {
 			$jwt = $jwtConfig->parser()->parse($jwt);
 		} catch(Exception $e) {
-			throw new Exception("Invalid JWT token", 409, $e);
+			throw new InvalidTokenException("Invalid JWT token", 409, $e);
 		}
 
 		$sub = $jwt->claims()->get("sub");
 		if ($sub === null) {
-			throw new Exception('Missing "SUB"');
+			throw new InvalidTokenException('Missing "SUB"');
 		}
 		return $sub;
 	}
