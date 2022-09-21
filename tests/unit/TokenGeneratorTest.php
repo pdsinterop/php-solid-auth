@@ -91,32 +91,8 @@ class TokenGeneratorTest extends AbstractTestCase
      */
     final public function testInstantiation(): void
     {
-        $mockConfig = $this->getMockBuilder(Config::class)
-            ->disableOriginalConstructor()
-            ->getMock()
-        ;
+        $actual = $this->createTokenGenerator();
 
-        $mockInterval = $this->getMockBuilder(\DateInterval::class)
-            ->disableOriginalConstructor()
-            ->getMock()
-        ;
-
-        $mockKeys = $this->getMockBuilder(KeysInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock()
-        ;
-
-        $mockConfig->expects($this->once())
-            ->method('getKeys')
-            ->willReturn($mockKeys)
-        ;
-
-        $mockKeys->expects($this->once())
-            ->method('getEncryptionKey')
-            ->willReturn('mock key')
-        ;
-
-        $actual = new TokenGenerator($mockConfig, $mockInterval);
         $expected = TokenGenerator::class;
 
         $this->assertInstanceOf($expected, $actual);
