@@ -13,6 +13,4 @@ interface KeysInterface
     public function getPrivateKey(): CryptKey;
 
     public function getPublicKey(): Key;
-
-    public function __construct(CryptKey $privateKey, Key $publicKey, CryptoKey|string $encryptionKey);
 }

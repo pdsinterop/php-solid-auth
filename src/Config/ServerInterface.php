@@ -10,8 +10,6 @@ interface ServerInterface extends \JsonSerializable
 
     public function getRequired(): array;
 
-    public function __construct(array $data, bool $strict = false);
-
     public function __toString(): string;
 
     /**
