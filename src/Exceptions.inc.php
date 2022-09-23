@@ -2,9 +2,11 @@
 
 namespace Pdsinterop\Solid\Auth\Exception;
 
+use Throwable;
+
 abstract class Exception extends \Exception implements \JsonSerializable
 {
-    final public function jsonSerialize()
+    final public function jsonSerialize(): array
     {
         return [
             'code' => $this->getCode(),
@@ -18,5 +20,8 @@ abstract class Exception extends \Exception implements \JsonSerializable
     }
 }
 
-
 class LogicException extends Exception {}
+
+class AuthorizationHeaderException extends Exception {}
+
+class InvalidTokenException extends Exception {}

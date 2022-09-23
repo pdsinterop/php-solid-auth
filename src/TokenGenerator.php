@@ -14,21 +14,26 @@ use Lcobucci\JWT\Signer\Rsa\Sha256;
 
 class TokenGenerator
 {
-    use CryptTrait;
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    /** @var Config */
-    public $config;
+    use CryptTrait;
+
+    public Config $config;
+
+    private \DateInterval $validFor;
 
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     final public function __construct(
-        Config $config
+        Config $config,
+        \DateInterval $validFor
     ) {
         $this->config = $config;
+        $this->validFor = $validFor;
+
         $this->setEncryptionKey($this->config->getKeys()->getEncryptionKey());
     }
-	
+
 	public function generateRegistrationAccessToken($clientId, $privateKey) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
@@ -42,8 +47,8 @@ class TokenGenerator
 
 		return $token->toString();
 	}
-		
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
+
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey, $now=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		$jwks = $this->getJwks();
@@ -51,9 +56,10 @@ class TokenGenerator
 
                 // Create JWT
                 $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
-                $now = new DateTimeImmutable();
+                $now = $now ?? new DateTimeImmutable();
                 $useAfter = $now->sub(new \DateInterval('PT1S'));
-                $expire = $now->add(new \DateInterval('PT' . 14*24*60*60 . 'S'));
+
+                $expire = $now->add($this->validFor);
 
                 $token = $jwtConfig->builder()
                         ->issuedBy($issuer)
@@ -75,7 +81,7 @@ class TokenGenerator
                         ->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
                 return $token->toString();
 	}
-	
+
 	public function respondToRegistration($registration, $privateKey) {
 		/*
 			Expects in $registration:
@@ -94,10 +100,10 @@ class TokenGenerator
 			'token_endpoint_auth_method' => 'client_secret_basic',
 			'registration_access_token' => $registration_access_token,
 		);
-		
+
 		return array_merge($registrationBase, $registration);
 	}
-	
+
 	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
 		if ($response->hasHeader("Location")) {
 			$value = $response->getHeaderLine("Location");
@@ -111,7 +117,7 @@ class TokenGenerator
 					$privateKey,
 					$dpopKey
 				);
-				$value = preg_replace("/#access_token=(.*?)&/", "#access_token=\$1&id_token=$idToken&", $value);				
+				$value = preg_replace("/#access_token=(.*?)&/", "#access_token=\$1&id_token=$idToken&", $value);
 				$response = $response->withHeader("Location", $value);
 			} else if (preg_match("/code=(.*?)&/", $value, $matches)) {
 				$idToken = $this->generateIdToken(
@@ -153,12 +159,13 @@ class TokenGenerator
 	public function getCodeInfo($code) {
 		return json_decode($this->decrypt($code), true);
 	}
+
 	///////////////////////////// HELPER FUNCTIONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 	private function generateJti() {
 		return substr(md5((string)time()), 12); // FIXME: generate unique jti values
 	}
-	
+
 	private function generateTokenHash($accessToken) {
 		$atHash = hash('sha256', $accessToken);
 		$atHash = substr($atHash, 0, 32);
