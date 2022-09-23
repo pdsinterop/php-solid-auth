@@ -155,12 +155,14 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $actual = $tokenGenerator->generateRegistrationAccessToken('mock client ID', $privateKey);
 
-        $expected = [
-            '{"typ":"JWT","alg":"RS256"}',
-            '{"iss":"mock issuer","aud":"mock client ID","sub":"mock client ID"}',
-        ];
-
-        $this->assertJwtEquals($expected, $actual);
+        $this->assertJwtEquals([[
+                "alg" => "RS256",
+                "typ" => "JWT",
+            ], [
+                "iss" => "mock issuer",
+                "aud" => "mock client ID",
+                "sub" => "mock client ID",
+            ]], $actual);
     }
 
     /**
@@ -298,7 +300,7 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
 
-        $idToken = $tokenGenerator->generateIdToken(
+        $actual = $tokenGenerator->generateIdToken(
             'mock access token',
             'mock clientId',
             'mock subject',
@@ -308,14 +310,11 @@ class TokenGeneratorTest extends AbstractTestCase
             $now
         );
 
-        [$header, $body,] = explode('.', $idToken);
-
-        $header = Base64Url::decode($header);
-        $body = json_decode(Base64Url::decode($body), true);
-
-        $this->assertEquals('{"typ":"JWT","alg":"RS256","kid":"0c3932ca20f3a00ad2eb72035f6cc9cb"}', $header);
-
-        $this->assertEquals([
+        $this->assertJwtEquals([[
+            "alg"=>"RS256",
+            "kid"=>"0c3932ca20f3a00ad2eb72035f6cc9cb",
+            "typ"=>"JWT",
+        ],[
             'aud' => 'mock clientId',
             'azp' => 'mock clientId',
             'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
@@ -328,6 +327,6 @@ class TokenGeneratorTest extends AbstractTestCase
             'nbf' => -23225829905.789,
             'nonce' => 'mock nonce',
             'sub' => 'mock subject',
-        ], $body);
+        ]], $actual);
     }
 }

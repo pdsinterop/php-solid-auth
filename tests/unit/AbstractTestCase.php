@@ -14,7 +14,18 @@ abstract class AbstractTestCase extends TestCase
     {
         $encoded = explode('.', $actual);
 
-        $decoded = array_map([Base64Url::class, 'decode'], $encoded);
+        $decoded = array_map(function ($encoded) {
+            $decoded = Base64Url::decode($encoded);
+
+            try {
+                $decoded = json_decode($decoded, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                // Not (valid) JSON, return Base64Url decoded value
+            }
+
+            return $decoded;
+        }, $encoded);
+
 
         // We can not easily compare the signatures in PHP, as the numeric
         // representation of the binary string is INF (infinity). So unless
