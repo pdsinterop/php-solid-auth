@@ -112,11 +112,14 @@ class ServerTest extends TestCase
             'token_endpoint_auth_signing_alg_values_supported' => ['RS256'],
             'display_values_supported' => [],
             'claim_types_supported' => ['normal'],
-            'claims_supported' => [],
+            'claims_supported' => ['webid'],
             'claims_parameter_supported' => false,
             'request_parameter_supported' => true,
             'request_uri_parameter_supported' => false,
-            'require_request_uri_registration' => false
+            'require_request_uri_registration' => false,
+            'code_challenge_methods_supported' => ['S256'],
+            'dpop_signing_alg_values_supported' => ['RS256'],
+            'scopes_supported' => ['webid']
         ], $actual);
     }
 }

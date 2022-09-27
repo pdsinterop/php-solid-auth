@@ -46,6 +46,20 @@ class OpenIdConnectMetadata extends AbstractEnum
     public const CLAIMS_SUPPORTED = 'claims_supported';
 
     /**
+     * JSON array containing a list of the Code challenge methods supported.
+     *
+     * @recommended
+     */
+    public const CODE_CHALLENGE_METHODS_SUPPORTED = 'code_challenge_methods_supported';
+
+    /**
+     * JSON array containing a list of the JWS alg values supported by the authorization server for DPoP proof JWTs.
+     *
+     * @recommended
+     */
+    public const DPOP_SIGNING_ALG_VALUES_SUPPORTED = 'dpop_signing_alg_values_supported';
+
+    /**
      * JSON array containing a list of the display parameter values that the OpenID Provider supports. These values are described in Section 3.1.2.1 of OpenID Connect Core 1.0 [OpenID.Core].
      */
     public const DISPLAY_VALUES_SUPPORTED = 'display_values_supported';

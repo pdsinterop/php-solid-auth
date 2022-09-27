@@ -23,6 +23,8 @@ class OpenIdConnectMetadataTest extends TestCase
             'claims_locales_supported',
             'claims_parameter_supported',
             'claims_supported',
+            'code_challenge_methods_supported',
+            'dpop_signing_alg_values_supported',
             'display_values_supported',
             'grant_types_supported',
             'id_token_encryption_alg_values_supported',
