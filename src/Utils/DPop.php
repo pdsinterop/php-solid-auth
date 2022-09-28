@@ -28,10 +28,10 @@ class DPop {
 
     private JtiValidator $jtiValidator;
 
-    public function __construct(JtiValidator $jtiValidator)
-    {
-        $this->jtiValidator = $jtiValidator;
-    }
+	public function __construct(JtiValidator $jtiValidator)
+	{
+		$this->jtiValidator = $jtiValidator;
+	}
 
 	/**
 	 * This method fetches the WebId from a request and verifies
@@ -48,29 +48,28 @@ class DPop {
 	public function getWebId($request) {
 		$serverParams = $request->getServerParams();
 
-		$this->validateRequestHeaders($serverParams);
-
-		[, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
-
-		$dpop = $serverParams['HTTP_DPOP'];
-
-		//@FIXME: check that there is just one DPoP token in the request
-		try {
-			$dpopKey = $this->getDpopKey($dpop, $request);
-		} catch (InvalidTokenStructure $e) {
-			throw new InvalidTokenException("Invalid JWT token: {$e->getMessage()}", 0, $e);
-		}
-
-		try {
-			$this->validateJwtDpop($jwt, $dpopKey);
-		} catch (RequiredConstraintsViolated $e) {
-			throw new InvalidTokenException($e->getMessage(), 0, $e);
-		}
-
-		if ($jwt) {
-			$webId = $this->getSubjectFromJwt($jwt);
-		} else {
+		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
 			$webId = "public";
+		} else {
+			$this->validateRequestHeaders($serverParams);
+
+			[, $jwt] = explode(" ", $serverParams['HTTP_AUTHORIZATION'], 2);
+
+			$dpop = $serverParams['HTTP_DPOP'];
+
+			//@FIXME: check that there is just one DPoP token in the request
+			try {
+				$dpopKey = $this->getDpopKey($dpop, $request);
+			} catch (InvalidTokenStructure $e) {
+				throw new InvalidTokenException("Invalid JWT token: {$e->getMessage()}", 0, $e);
+			}
+
+			try {
+				$this->validateJwtDpop($jwt, $dpopKey);
+			} catch (RequiredConstraintsViolated $e) {
+				throw new InvalidTokenException($e->getMessage(), 0, $e);
+			}
+			$webId = $this->getSubjectFromJwt($jwt);
 		}
 
 		return $webId;
@@ -274,10 +273,6 @@ class DPop {
 	}
 
 	private function validateRequestHeaders($serverParams) {
-		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
-			throw new AuthorizationHeaderException("Authorization Header missing");
-		}
-
 		if (str_contains($serverParams['HTTP_AUTHORIZATION'], ' ') === false) {
 			throw new AuthorizationHeaderException("Authorization Header does not contain parameters");
 		}
