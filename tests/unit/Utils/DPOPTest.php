@@ -234,7 +234,7 @@ class DPOPTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request without Authorization Header
+     * @testdox Dpop SHOULD return 'public' WHEN asked to get WebId from Request without Authorization Header
      *
      * @covers ::getWebId
      */
@@ -245,10 +245,10 @@ class DPOPTest extends AbstractTestCase
 
         $request = new ServerRequest(array(),array(), $this->url);
 
-        $this->expectException(AuthorizationHeaderException::class);
-        $this->expectExceptionMessage('Authorization Header missing');
+        $actual = $dpop->getWebId($request);
+        $expected = 'public';
 
-        $dpop->getWebId($request);
+        $this->assertEquals($expected, $actual);
     }
 
     /**
