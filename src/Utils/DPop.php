@@ -48,7 +48,7 @@ class DPop {
 	public function getWebId($request) {
 		$serverParams = $request->getServerParams();
 
-		if (isset($serverParams['HTTP_AUTHORIZATION']) === false) {
+		if (empty($serverParams['HTTP_AUTHORIZATION'])) {
 			$webId = "public";
 		} else {
 			$this->validateRequestHeaders($serverParams);
