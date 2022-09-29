@@ -59,13 +59,7 @@ class DPop {
 
 			//@FIXME: check that there is just one DPoP token in the request
 			try {
-				$dpopKey = $this->getDpopKey($dpop, $request);
-			} catch (InvalidTokenStructure $e) {
-				throw new InvalidTokenException("Invalid JWT token: {$e->getMessage()}", 0, $e);
-			}
-
-			try {
-				$this->validateJwtDpop($jwt, $dpopKey);
+				$this->validateJwtDpop($jwt, $dpop, $request);
 			} catch (RequiredConstraintsViolated $e) {
 				throw new InvalidTokenException($e->getMessage(), 0, $e);
 			}
@@ -76,109 +70,146 @@ class DPop {
 	}
 
 	/**
-	 * Returns the "kid" from the "jwk" header in the DPoP token.
-	 * The DPoP token must be valid.
-	 *
-	 * @param string $dpop The DPoP token
-	 * @param ServerRequestInterface $request Server Request
-	 *
-	 * @return string          the "kid" from the "jwk" header in the DPoP token.
-	 *
-	 * @throws RequiredConstraintsViolated
+	 * kept for backwards compatability
+	 * note: the "kid" value is not guaranteed to be a hash of the jwk
+	 * so to compare a jkt, calculate the jwk thumbprint instead
+	 * @param  string $dpop    The DPoP token, raw
+	 * @param  ServerRequestInterface $request Server Request
+	 * @return string          The "kid" from the "jwk" header
 	 */
 	public function getDpopKey($dpop, $request) {
-		$kid = '';
-
 		$this->validateDpop($dpop, $request);
 
-		// 1.  the string value is a well-formed JWT,
 		$jwtConfig = Configuration::forUnsecuredSigner();
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
 
-		if (isset($jwk['kid'])) {
-			$kid = $jwk['kid'];
+		if (isset($jwk['kid']) === false) {
+			throw new InvalidTokenException('Key ID is missing from JWK header');
 		}
 
-		return $kid;
+		return $jwk['kid'];
 	}
 
-	private function validateJwtDpop($jwt, $dpopKey) {
-		$jwtConfig = Configuration::forUnsecuredSigner();
-		$jwt = $jwtConfig->parser()->parse($jwt);
-		$cnf = $jwt->claims()->get("cnf");
-
-		if ($cnf === null) {
-			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing');
+	/**
+	 * RFC7638 defines a method for computing the hash value (or "digest") of a JSON Web Key (JWK).
+	 *
+	 * The resulting hash value can be used for identifying the key represented by the JWK
+	 * that is the subject of the thumbprint.
+	 *
+	 * For instance by using the base64url-encoded JWK Thumbprint value as a key ID (or "kid") value.
+	 *
+	 * @see https://www.rfc-editor.org/rfc/rfc7638
+	 *
+	 * The thumbprint of a JWK is created by:
+	 *
+	 * 1. Constructing a JSON string (without whitespaces) with the required keys in alphabetical order.
+	 * 2. Hashing the JSON string using SHA-256 (or another hash function)
+	 *
+	 * @param string $jwk The JWK key to thumbprint
+	 * @return string the thumbprint
+	 * @throws InvalidTokenException	 
+	 */
+	public function makeJwkThumbprint($jwk) {
+		if (!$jwk || !isset($jwk['kty'])) {
+			throw new InvalidTokenException('JWK has no "kty" key type');
 		}
-
-		if (isset($cnf['jkt']) === false) {
-			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
+		if (!in_array($jwk['kty'], ['RSA','EC'])) {
+			throw new InvalidTokenException('JWK "kty" key type value must be one of "RSA" or "EC", got "'.$jwk['kty'].'" instead.');
 		}
-
-		// !!! HIER GEBLEVEN !!!
-
-		// @CHECKME: If we are checking against the JKT this "if" can be removed
-		if ($dpopKey !== '') {
-			$keyTypes = [
-				/*ES256*/ 'EC' => ['crv', 'kty', 'x', 'y'],
-				/*RS256*/ 'RSA' => ['e', 'kty', 'n'],
-			];
-
-			$jwk = $jwt->headers()->get('jwk');
-
-			$keyType = $jwk['kty'];
-
-			if (array_key_exists($keyType, $keyTypes) === false) {
-				$message = vsprintf('Unsupported key type "%s". Must be one of: %s', [
-					$keyType,
-					implode(', ', array_keys($keyTypes)),
-				]);
-				throw new InvalidTokenException($message);
+		if ($jwk['kty']=='RSA') {
+			if (!isset($jwk['e']) || !isset($jwk['n'])) {
+				throw new InvalidTokenException('JWK values do not match "RSA" key type');
 			}
-
-			$required = $keyTypes[$keyType];
-			$missing = array_diff($required, array_keys($jwk));
-
-			if ($missing !== []) {
-				throw new InvalidTokenException('Required JWK values have not been set: ' . implode(', ', $missing));
-			}
-
-			/**
-			 * RFC7638 defines a method for computing the hash value (or "digest") of a JSON Web Key (JWK).
-			 *
-			 * The resulting hash value can be used for identifying the key represented by the JWK
-			 * that is the subject of the thumbprint.
-			 *
-			 * For instance by using the base64url-encoded JWK Thumbprint value as a key ID (or "kid") value.
-			 *
-			 * @see https://www.rfc-editor.org/rfc/rfc7638
-			 *
-			 * The thumbprint of a JWK is created by:
-			 *
-			 * 1. Constructing a JSON string (without whitespaces) with the required keys in alphabetical order.
-			 * 2. Hashing the JSON string using SHA-256 (or another hash function)
-			 *
-			 */
-			// @FIXME: Add logic to build correct JSON string
 			$json = vsprintf('{"e":"%s","kty":"%s","n":"%s"}', [
 				$jwk['e'],
 				$jwk['kty'],
 				$jwk['n'],
 			]);
 
-			$hash = hash('sha256', $json);
-			$encoded = Base64Url::encode($hash);
-
-			// @FIXME: What are we comparing against? JKT? KID / $dpopKey?
-			if ($encoded !== $dpopKey /* or $cnf['jkt'] ?*/) {
-				// @CHECKME: What error message belongs here?
-				throw new InvalidTokenException('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
+		} else { //EC
+			if (!isset($jwk['crv']) || !isset($jwk['x']) || !isset($jwk['y'])) {
+				throw new InvalidTokenException('JWK values doe not match "EC" key type');
 			}
+			//crv, kty, x, y
+			$json = vsprintf('{"crv":"%s","kty":"%s","x":"%s","y":"%s"}', [
+				$jwk['crv'],
+				$jwk['kty'],
+				$jwk['x'],
+				$jwk['y']
+			]);			
+		}
+		$hash    = hash('sha256', $json);
+		$encoded = Base64Url::encode($hash);
+		return $encoded;
+	}
+
+	/**
+	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-4.2
+	 * When the DPoP proof is used in conjunction with the presentation of
+	 * an access token in protected resource access, see Section 7, the DPoP
+	 * proof MUST also contain the following claim:
+     *   ath: hash of the access token.  The value MUST be the result of a
+     *   base64url encoding (as defined in Section 2 of [RFC7515]) the
+     *   SHA-256 [SHS] hash of the ASCII encoding of the associated access
+     *   token's value.
+     * See also: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
+     * 
+	 * Validates the above part of the oauth dpop specification
+	 * @param  string $jwt  JWT access token, raw
+	 * @param  string $dpop DPoP token, raw
+	 * @param  ServerRequestInterface $request Server Request
+	 * @return bool true, if the dpop token "ath" claim matches the access token
+	 */
+	public function validateJwtDpop($jwt, $dpop, $request) {
+		$this->validateDpop($dpop, $request);
+		$jwtConfig = Configuration::forUnsecuredSigner();
+		$dpopJWT = $jwtConfig->parser()->parse($dpop);
+		
+		$ath = $dpopJWT->claims()->get('ath');
+		if ($ath === null) {
+			throw new InvalidTokenException('DPoP "ath" claim is missing');
+		}
+		
+		$hash    = hash('sha256', $jwt);
+		$encoded = Base64Url::encode($hash);
+		return ($ath === $encoded);
+	}
+
+	/**
+	 * https://solidproject.org/TR/oidc#tokens-id
+	 * validates that the provided OIDC ID Token matches the DPoP header
+	 * @param  string $token The OIDS ID Token (raw)
+	 * @param  string $dpop  The DPoP Token (raw)
+	 * @param  ServerRequestInterface $request Server Request
+	 * @return bool          True if the id token jkt matches the dpop token jwk
+	 * @throws InvalidTokenException when the tokens do not match
+	 */
+	public function validateIdTokenDpop($token, $dpop, $request) {
+		$this->validateDpop($dpop, $request);
+		$jwtConfig = Configuration::forUnsecuredSigner();
+		$jwt = $jwtConfig->parser()->parse($token);	
+		$cnf = $jwt->claims()->get("cnf");
+
+		if ($cnf === null) {
+			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing');
 		}
 
-		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
-		return false;
+		if (!isset($cnf['jkt'])) {
+			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
+		}
+
+		$jkt = $cnf['jkt'];
+
+		$dpopJwt = $jwtConfig->parser()->parse($dpop);
+		$jwk = $dpopJwt->headers()->get('jwk');
+
+		$jwkThumbprint = $this->makeJwkThumbprint($jwk);
+		if ($jwkThumbprint !== $jkt) {
+			throw new InvalidTokenException('ID Token JWK Thumbprint (jkt) does not match the JWK from DPoP header');
+		}
+
+		return true;
 	}
 
 	/**
@@ -191,6 +222,7 @@ class DPop {
 	 * @return bool True if the DPOP token is valid, false otherwise
 	 *
 	 * @throws RequiredConstraintsViolated
+	 * @throws InvalidTokenException
 	 */
 	public function validateDpop($dpop, $request) {
 		/*
@@ -220,7 +252,11 @@ class DPop {
 		*/
 		// 1.  the string value is a well-formed JWT,
 		$jwtConfig = Configuration::forUnsecuredSigner();
-		$dpop = $jwtConfig->parser()->parse($dpop);
+		try {
+			$dpop = $jwtConfig->parser()->parse($dpop);
+		} catch(\Exception $e) {
+			throw new InvalidTokenException('Invalid DPoP token', 400, $e);
+		}
 
 	    // 2.  all required claims are contained in the JWT,
 		$htm = $dpop->claims()->get("htm"); // http method
@@ -309,9 +345,6 @@ class DPop {
 		if (! $isJtiValid) {
 			throw new InvalidTokenException("jti is invalid");
 		}
-
-		// 10. that, if used with an access token, it also contains the 'ath' claim, with a hash of the access token
-		// TODO: implement
 
 		return true;
 	}
