@@ -311,7 +311,7 @@ class DPOPTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without JWT Key Id
+     * @testdox Dpop SHOULD return given "sub" WHEN asked to get WebId from Request with valid DPOP without JWT Key Id
      *
      * @covers ::getWebId
      *
@@ -340,10 +340,10 @@ class DPOPTest extends AbstractTestCase
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
-        $this->expectException(InvalidTokenException::class);
-        $this->expectExceptionMessage('Key ID is missing from JWK header');
+        $actual = $dpop->getWebId($request);
+        $expected = 'mock sub';
 
-        $dpop->getWebId($request);
+        $this->assertEquals($expected, $actual);
     }
 
     /**

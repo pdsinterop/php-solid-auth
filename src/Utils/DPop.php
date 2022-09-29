@@ -87,6 +87,8 @@ class DPop {
 	 * @throws RequiredConstraintsViolated
 	 */
 	public function getDpopKey($dpop, $request) {
+		$kid = '';
+
 		$this->validateDpop($dpop, $request);
 
 		// 1.  the string value is a well-formed JWT,
@@ -94,11 +96,11 @@ class DPop {
 		$dpop = $jwtConfig->parser()->parse($dpop);
 		$jwk  = $dpop->headers()->get("jwk");
 
-		if (isset($jwk['kid']) === false) {
-			throw new InvalidTokenException('Key ID is missing from JWK header');
+		if (isset($jwk['kid'])) {
+			$kid = $jwk['kid'];
 		}
 
-		return $jwk['kid'];
+		return $kid;
 	}
 
 	private function validateJwtDpop($jwt, $dpopKey) {
