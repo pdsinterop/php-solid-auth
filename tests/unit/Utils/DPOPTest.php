@@ -349,7 +349,6 @@ class DPOPTest extends AbstractTestCase
         $this->dpop['payload']['jti'] = 'mock jti';
         $this->dpop['payload']['sub'] = self::MOCK_SUBJECT;
 
-
         $dpopToken = $this->sign($this->dpop);
 
         $mockJtiValidator = $this->createMockJtiValidator();
@@ -374,16 +373,15 @@ class DPOPTest extends AbstractTestCase
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without Confirmation Claim
-     * why? which spec?
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
-/*    
     final public function testGetWebIdWithDpopWithoutConfirmationClaim(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['jti'] = 'mock jti';
         $this->dpop['payload']['sub'] = self::MOCK_SUBJECT;
@@ -409,19 +407,18 @@ class DPOPTest extends AbstractTestCase
 
         $dpop->getWebId($request);
     }
-*/
+
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without JWT Key Thumbprint
-     * why? which spec?
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
-/*
     final public function testGetWebIdWithDpopWithoutThumbprint(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['cnf'] = [];
         $this->dpop['payload']['jti'] = 'mock jti';
@@ -446,19 +443,18 @@ class DPOPTest extends AbstractTestCase
 
         $dpop->getWebId($request);
     }
-*/
+
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP with Thumbprint not matching Key Id
-     * why? which spec?
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
-/*
     final public function testGetWebIdWithDpopWithMismatchingThumbprintAndKeyId(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT . 'Mismatch';
         $this->dpop['payload']['cnf'] = ['jkt' => self::MOCK_THUMBPRINT];
         $this->dpop['payload']['jti'] = 'mock jti';
@@ -483,7 +479,6 @@ class DPOPTest extends AbstractTestCase
 
         $dpop->getWebId($request);
     }
-*/
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without "sub"

@@ -114,11 +114,13 @@ class DPop {
 		if (!$jwk || !isset($jwk['kty'])) {
 			throw new InvalidTokenException('JWK has no "kty" key type');
 		}
+		// https://www.rfc-editor.org/rfc/rfc7517.html#section-4.1
+		// and https://www.rfc-editor.org/rfc/rfc7518.html#section-6.1
 		if (!in_array($jwk['kty'], ['RSA','EC'])) {
 			throw new InvalidTokenException('JWK "kty" key type value must be one of "RSA" or "EC", got "'.$jwk['kty'].'" instead.');
 		}
-		if ($jwk['kty']=='RSA') {
-			if (!isset($jwk['e']) || !isset($jwk['n'])) {
+		if ($jwk['kty']=='RSA') { // used with RS256 alg
+			if (!isset($jwk['e'], $jwk['n'])) {
 				throw new InvalidTokenException('JWK values do not match "RSA" key type');
 			}
 			$json = vsprintf('{"e":"%s","kty":"%s","n":"%s"}', [
@@ -126,9 +128,8 @@ class DPop {
 				$jwk['kty'],
 				$jwk['n'],
 			]);
-
-		} else { //EC
-			if (!isset($jwk['crv']) || !isset($jwk['x']) || !isset($jwk['y'])) {
+		} else { // EC used with ES256 alg 
+			if (!isset($jwk['crv'], $jwk['x'], $jwk['y'])) {
 				throw new InvalidTokenException('JWK values doe not match "EC" key type');
 			}
 			//crv, kty, x, y
@@ -219,7 +220,7 @@ class DPop {
 	 * @param string $dpop The DPOP token
 	 * @param ServerRequestInterface $request Server Request
 	 *
-	 * @return bool True if the DPOP token is valid, false otherwise
+	 * @return bool True if the DPOP token is valid
 	 *
 	 * @throws RequiredConstraintsViolated
 	 * @throws InvalidTokenException
