@@ -116,8 +116,65 @@ class DPop {
 			throw new InvalidTokenException('JWT Confirmation claim (cnf) is missing Thumbprint (jkt)');
 		}
 
-		if ($cnf['jkt'] !== $dpopKey) {
-			throw new InvalidTokenException('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
+		// !!! HIER GEBLEVEN !!!
+
+		// @CHECKME: If we are checking against the JKT this "if" can be removed
+		if ($dpopKey !== '') {
+			$keyTypes = [
+				/*ES256*/ 'EC' => ['crv', 'kty', 'x', 'y'],
+				/*RS256*/ 'RSA' => ['e', 'kty', 'n'],
+			];
+
+			$jwk = $jwt->headers()->get('jwk');
+
+			$keyType = $jwk['kty'];
+
+			if (array_key_exists($keyType, $keyTypes) === false) {
+				$message = vsprintf('Unsupported key type "%s". Must be one of: %s', [
+					$keyType,
+					implode(', ', array_keys($keyTypes)),
+				]);
+				throw new InvalidTokenException($message);
+			}
+
+			$required = $keyTypes[$keyType];
+			$missing = array_diff($required, array_keys($jwk));
+
+			if ($missing !== []) {
+				throw new InvalidTokenException('Required JWK values have not been set: ' . implode(', ', $missing));
+			}
+
+			/**
+			 * RFC7638 defines a method for computing the hash value (or "digest") of a JSON Web Key (JWK).
+			 *
+			 * The resulting hash value can be used for identifying the key represented by the JWK
+			 * that is the subject of the thumbprint.
+			 *
+			 * For instance by using the base64url-encoded JWK Thumbprint value as a key ID (or "kid") value.
+			 *
+			 * @see https://www.rfc-editor.org/rfc/rfc7638
+			 *
+			 * The thumbprint of a JWK is created by:
+			 *
+			 * 1. Constructing a JSON string (without whitespaces) with the required keys in alphabetical order.
+			 * 2. Hashing the JSON string using SHA-256 (or another hash function)
+			 *
+			 */
+			// @FIXME: Add logic to build correct JSON string
+			$json = vsprintf('{"e":"%s","kty":"%s","n":"%s"}', [
+				$jwk['e'],
+				$jwk['kty'],
+				$jwk['n'],
+			]);
+
+			$hash = hash('sha256', $json);
+			$encoded = Base64Url::encode($hash);
+
+			// @FIXME: What are we comparing against? JKT? KID / $dpopKey?
+			if ($encoded !== $dpopKey /* or $cnf['jkt'] ?*/) {
+				// @CHECKME: What error message belongs here?
+				throw new InvalidTokenException('JWT Confirmation claim (cnf) provided Thumbprint (jkt) does not match Key ID from JWK header');
+			}
 		}
 
 		//@FIXME: add check for "ath" claim in DPoP token, per https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
