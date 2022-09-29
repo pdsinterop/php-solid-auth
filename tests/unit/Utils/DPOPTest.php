@@ -241,6 +241,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId without Request given
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutRequest(): void
     {
@@ -256,6 +257,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD return 'public' WHEN asked to get WebId from Request without Authorization Header
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutHttpAuthorizationHeader(): void
     {
@@ -274,6 +276,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with incorrect Authorization Header format
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithIncorrectAuthHeaderFormat(): void
     {
@@ -294,6 +297,7 @@ class DPOPTest extends AbstractTestCase
      * @covers ::getWebId
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithInvalidJwt(): void
     {
@@ -315,6 +319,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request without DPOP authorization
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutDpop(): void
     {
@@ -336,6 +341,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutKeyId(): void
     {
@@ -373,6 +379,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
 /*    
     final public function testGetWebIdWithDpopWithoutConfirmationClaim(): void
@@ -410,6 +417,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
 /*
     final public function testGetWebIdWithDpopWithoutThumbprint(): void
@@ -446,6 +454,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
 /*
     final public function testGetWebIdWithDpopWithMismatchingThumbprintAndKeyId(): void
@@ -483,6 +492,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutSub(): void
     {
@@ -519,6 +529,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutAth(): void
     {
@@ -550,6 +561,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpop(): void
     {
