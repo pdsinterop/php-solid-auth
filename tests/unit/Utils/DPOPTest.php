@@ -27,12 +27,29 @@ class DPOPTest extends AbstractTestCase
     private $dpop;
     private $url;
     private $serverRequest;
+    private $accessToken;
 
     protected function setUp(): void
     {
         $keyPath    = __DIR__ . '/../../fixtures/keys';
         $privateKey = file_get_contents($keyPath . '/private.key');
         $publicKey  = file_get_contents($keyPath . '/public.key');
+
+        //https://datatracker.ietf.org/doc/html/rfc9068#section-2.2
+        $this->accessToken = $this->sign([
+            "header" => [
+                'typ' => 'jwt',
+                'alg' => 'RS256'
+            ],
+            "payload" => [
+                'iss' => 'example.com',
+                'iat' => time(),
+                'exp' => time()+3600,
+                'aud' => 'example.com',
+                'sub' => self::MOCK_SUBJECT,
+                'jti' => time() // any changing value will do for the tests
+            ]
+        ]); 
 
         $keyInfo = \openssl_pkey_get_details(\openssl_pkey_get_public($publicKey));
         $jwk = [
@@ -55,6 +72,8 @@ class DPOPTest extends AbstractTestCase
             'iat' => time(),
             'nbf' => time(),
             'exp' => time()+3600,
+            'ath' => hash('SHA256', $this->accessToken['token']),
+            'jti' => time() // any changing value will do for the tests
         ];
 
         $this->dpop = $this->sign([
@@ -222,6 +241,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId without Request given
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutRequest(): void
     {
@@ -237,6 +257,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD return 'public' WHEN asked to get WebId from Request without Authorization Header
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutHttpAuthorizationHeader(): void
     {
@@ -255,6 +276,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with incorrect Authorization Header format
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithIncorrectAuthHeaderFormat(): void
     {
@@ -275,6 +297,7 @@ class DPOPTest extends AbstractTestCase
      * @covers ::getWebId
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithInvalidJwt(): void
     {
@@ -282,11 +305,11 @@ class DPOPTest extends AbstractTestCase
         $dpop = new DPop($mockJtiValidator);
 
         $this->expectException(InvalidTokenException::class);
-        $this->expectExceptionMessage('Invalid JWT token');
+        $this->expectExceptionMessage('Invalid DPoP token');
 
         $request = new ServerRequest(array(
             'HTTP_AUTHORIZATION' => "dpop Invalid JWT",
-            'HTTP_DPOP' => 'Mock dpop',
+            'HTTP_DPOP' => 'Invalid dpop',
         ),array(), $this->url);
 
         $dpop->getWebId($request);
@@ -296,6 +319,7 @@ class DPOPTest extends AbstractTestCase
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request without DPOP authorization
      *
      * @covers ::getWebId
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithoutDpop(): void
     {
@@ -311,12 +335,13 @@ class DPOPTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without JWT Key Id
+     * @testdox Dpop SHOULD return given "sub" WHEN asked to get WebId from Request with valid DPOP without JWT Key Id
      *
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutKeyId(): void
     {
@@ -324,7 +349,7 @@ class DPOPTest extends AbstractTestCase
         $this->dpop['payload']['jti'] = 'mock jti';
         $this->dpop['payload']['sub'] = self::MOCK_SUBJECT;
 
-        $token = $this->sign($this->dpop);
+        $dpopToken = $this->sign($this->dpop);
 
         $mockJtiValidator = $this->createMockJtiValidator();
 
@@ -336,26 +361,27 @@ class DPOPTest extends AbstractTestCase
         $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
-            'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
-            'HTTP_DPOP' => $token['token'],
+            'HTTP_AUTHORIZATION' => "dpop {$this->accessToken['token']}",
+            'HTTP_DPOP' => $dpopToken['token'],
         ),array(), $this->url);
 
-        $this->expectException(InvalidTokenException::class);
-        $this->expectExceptionMessage('Key ID is missing from JWK header');
+        $actual = $dpop->getWebId($request);
+        $expected = 'mock sub';
 
-        $dpop->getWebId($request);
+        $this->assertEquals($expected, $actual);
     }
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without Confirmation Claim
-     *
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutConfirmationClaim(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['jti'] = 'mock jti';
         $this->dpop['payload']['sub'] = self::MOCK_SUBJECT;
@@ -384,14 +410,15 @@ class DPOPTest extends AbstractTestCase
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without JWT Key Thumbprint
-     *
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutThumbprint(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['cnf'] = [];
         $this->dpop['payload']['jti'] = 'mock jti';
@@ -419,14 +446,15 @@ class DPOPTest extends AbstractTestCase
 
     /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP with Thumbprint not matching Key Id
-     *
      * @covers ::getWebId
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithMismatchingThumbprintAndKeyId(): void
     {
+        $this->markTestSkipped('Skipped untill we find a spec that requires this');
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT . 'Mismatch';
         $this->dpop['payload']['cnf'] = ['jkt' => self::MOCK_THUMBPRINT];
         $this->dpop['payload']['jti'] = 'mock jti';
@@ -459,13 +487,48 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpopWithoutSub(): void
     {
         $this->dpop['header']['jwk'][JwkParameter::KEY_ID] = self::MOCK_THUMBPRINT;
         $this->dpop['payload']['cnf'] = ['jkt' => self::MOCK_THUMBPRINT];
         $this->dpop['payload']['jti'] = 'mock jti';
+        $token = $this->sign($this->dpop);
 
+        unset($this->accessToken['payload']['sub']);
+        $accessToken = $this->sign($this->accessToken);
+
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $mockJtiValidator->expects($this->once())
+            ->method('validate')
+            ->willReturn(true)
+        ;
+        $dpop = new DPop($mockJtiValidator);
+
+        $request = new ServerRequest(array(
+            'HTTP_AUTHORIZATION' => "dpop {$accessToken['token']}",
+            'HTTP_DPOP' => $token['token'],
+        ),array(), $this->url);
+
+        $this->expectException(InvalidTokenException::class);
+        $this->expectExceptionMessage('Missing "SUB"');
+
+        $dpop->getWebId($request);
+    }
+
+    /**
+     * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without "ath"
+     *
+     * @covers ::getWebId
+     *
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
+     */
+    final public function testGetWebIdWithDpopWithoutAth(): void
+    {
+        unset($this->dpop['payload']['ath']);
         $token = $this->sign($this->dpop);
 
         $mockJtiValidator = $this->createMockJtiValidator();
@@ -476,12 +539,12 @@ class DPOPTest extends AbstractTestCase
         $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
-            'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
+            'HTTP_AUTHORIZATION' => "dpop {$this->accessToken['token']}",
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
         $this->expectException(InvalidTokenException::class);
-        $this->expectExceptionMessage('Missing "SUB"');
+        $this->expectExceptionMessage('DPoP "ath" claim is missing');
 
         $dpop->getWebId($request);
     }
@@ -493,6 +556,7 @@ class DPOPTest extends AbstractTestCase
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
     final public function testGetWebIdWithDpop(): void
     {
@@ -513,7 +577,7 @@ class DPOPTest extends AbstractTestCase
         $dpop = new DPop($mockJtiValidator);
 
         $request = new ServerRequest(array(
-            'HTTP_AUTHORIZATION' => "dpop {$token['token']}",
+            'HTTP_AUTHORIZATION' => "dpop {$this->accessToken['token']}",
             'HTTP_DPOP' => $token['token'],
         ),array(), $this->url);
 
