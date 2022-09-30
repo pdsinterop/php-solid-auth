@@ -2,9 +2,10 @@
 
 namespace Pdsinterop\Solid\Auth;
 
-use Pdsinterop\Solid\Auth\Utils\Jwks;
+use Pdsinterop\Solid\Auth\Exception\InvalidTokenException;
+use Pdsinterop\Solid\Auth\Utils\DPop;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
-use Laminas\Diactoros\Response\JsonResponse as JsonResponse;
+use Laminas\Diactoros\Response\JsonResponse;
 use League\OAuth2\Server\CryptTrait;
 
 use DateTimeImmutable;
@@ -21,14 +22,17 @@ class TokenGenerator
     public Config $config;
 
     private \DateInterval $validFor;
+    private DPop $dpopUtil;
 
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     final public function __construct(
         Config $config,
-        \DateInterval $validFor
+        \DateInterval $validFor,
+        DPop $dpopUtil,
     ) {
         $this->config = $config;
+        $this->dpopUtil = $dpopUtil;
         $this->validFor = $validFor;
 
         $this->setEncryptionKey($this->config->getKeys()->getEncryptionKey());
@@ -48,10 +52,9 @@ class TokenGenerator
 		return $token->toString();
 	}
 
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpopKey, $now=null) {
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpop, $now=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
-		$jwks = $this->getJwks();
 		$tokenHash = $this->generateTokenHash($accessToken);
 
                 // Create JWT
@@ -60,6 +63,8 @@ class TokenGenerator
                 $useAfter = $now->sub(new \DateInterval('PT1S'));
 
                 $expire = $now->add($this->validFor);
+
+        $jkt = $this->makeJwkThumbprint($dpop);
 
                 $token = $jwtConfig->builder()
                         ->issuedBy($issuer)
@@ -74,10 +79,8 @@ class TokenGenerator
                         ->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
                         ->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
                         ->withClaim("cnf", array(
-                                "jkt" => $dpopKey,
-                        //      "jwk" => $jwks['keys'][0]
+                                "jkt" => $jkt,
                         ))
-                        ->withHeader('kid', $jwks['keys'][0]['kid'])
                         ->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
                 return $token->toString();
 	}
@@ -104,7 +107,7 @@ class TokenGenerator
 		return array_merge($registrationBase, $registration);
 	}
 
-	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey, $dpopKey=null) {
+	public function addIdTokenToResponse($response, $clientId, $subject, $nonce, $privateKey, $dpop=null) {
 		if ($response->hasHeader("Location")) {
 			$value = $response->getHeaderLine("Location");
 
@@ -115,7 +118,7 @@ class TokenGenerator
 					$subject,
 					$nonce,
 					$privateKey,
-					$dpopKey
+					$dpop
 				);
 				$value = preg_replace("/#access_token=(.*?)&/", "#access_token=\$1&id_token=$idToken&", $value);
 				$response = $response->withHeader("Location", $value);
@@ -126,7 +129,7 @@ class TokenGenerator
 					$subject,
 					$nonce,
 					$privateKey,
-					$dpopKey
+					$dpop
 				);
 				$value = preg_replace("/code=(.*?)&/", "code=\$1&id_token=$idToken&", $value);
 				$response = $response->withHeader("Location", $value);
@@ -143,7 +146,7 @@ class TokenGenerator
 						$subject,
 						$nonce,
 						$privateKey,
-						$dpopKey
+						$dpop
 					);
 
 					$body['access_token'] = $body['id_token'];
@@ -178,9 +181,16 @@ class TokenGenerator
 		return $atHash;
 	}
 
-	private function getJwks() {
-        $key = $this->config->getKeys()->getPublicKey();
-        $jwks = new Jwks($key);
-		return json_decode($jwks->__toString(), true);
+	private function makeJwkThumbprint($dpop): string
+	{
+		$dpopConfig = Configuration::forUnsecuredSigner();
+		$parsedDpop = $dpopConfig->parser()->parse($dpop);
+		$jwk = $parsedDpop->headers()->get("jwk");
+
+		if (empty($jwk)) {
+			throw new InvalidTokenException('Required JWK header missing in DPOP');
+		}
+
+		return $this->dpopUtil->makeJwkThumbprint($jwk);
 	}
 }
