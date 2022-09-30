@@ -157,6 +157,7 @@ class DPop {
      * See also: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
      * 
 	 * Validates the above part of the oauth dpop specification
+	 *
 	 * @param  string $jwt  JWT access token, raw
 	 * @param  string $dpop DPoP token, raw
 	 * @param  ServerRequestInterface $request Server Request
@@ -165,16 +166,17 @@ class DPop {
 	public function validateJwtDpop($jwt, $dpop, $request) {
 		$this->validateDpop($dpop, $request);
 		$jwtConfig = Configuration::forUnsecuredSigner();
-		$dpopJWT = $jwtConfig->parser()->parse($dpop);
-		
-		$ath = $dpopJWT->claims()->get('ath');
-		if ($ath === null) {
-			throw new InvalidTokenException('DPoP "ath" claim is missing');
-		}
-		
-		$hash    = hash('sha256', $jwt);
-		$encoded = Base64Url::encode($hash);
-		return ($ath === $encoded);
+		$jwtConfig->parser()->parse($dpop);
+
+		/**
+		 * @FIXME: ATH claim is not yet supported/required by the Solid OIDC specification.
+		 *         Once the Solid spec catches up to the DPOP spec, not having an ATH is incorrect.
+		 *         At that point, instead of returning "true", throw an exception:
+		 *
+		 * @see https://github.com/pdsinterop/php-solid-auth/issues/34
+		 */
+		// throw new InvalidTokenException('DPoP "ath" claim is missing');
+		return true;
 	}
 
 	/**

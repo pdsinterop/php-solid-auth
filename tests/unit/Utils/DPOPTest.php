@@ -518,6 +518,36 @@ class DPOPTest extends AbstractTestCase
     }
 
     /**
+     * @testdox Dpop SHOULD not complain WHEN asked to get WebId from Request with valid DPOP without "ath"
+     *
+     * @covers ::getWebId
+     *
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::getDpopKey
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
+     */
+    final public function testGetWebIdWithDpopWithoutOptionalAth(): void
+    {
+        unset($this->dpop['payload']['ath']);
+        $token = $this->sign($this->dpop);
+
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $mockJtiValidator->expects($this->once())
+            ->method('validate')
+            ->willReturn(true)
+        ;
+        $dpop = new DPop($mockJtiValidator);
+
+        $request = new ServerRequest(array(
+            'HTTP_AUTHORIZATION' => "dpop {$this->accessToken['token']}",
+            'HTTP_DPOP' => $token['token'],
+        ),array(), $this->url);
+
+        $webId = $dpop->getWebId($request);
+
+        $this->assertEquals(self::MOCK_SUBJECT, $webId);
+    }
+    /**
      * @testdox Dpop SHOULD complain WHEN asked to get WebId from Request with valid DPOP without "ath"
      *
      * @covers ::getWebId
@@ -526,8 +556,11 @@ class DPOPTest extends AbstractTestCase
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateDpop
      * @uses \Pdsinterop\Solid\Auth\Utils\DPop::validateJwtDpop
      */
-    final public function testGetWebIdWithDpopWithoutAth(): void
+    final public function testGetWebIdWithDpopWithoutRequiredAth(): void
     {
+        /*/ @see https://github.com/pdsinterop/php-solid-auth/issues/34 /*/
+        $this->markTestSkipped('ATH claim is not yet supported/required by the Solid OIDC specification.');
+
         unset($this->dpop['payload']['ath']);
         $token = $this->sign($this->dpop);
 

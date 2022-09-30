@@ -6,6 +6,7 @@ use Pdsinterop\Solid\Auth\Config\KeysInterface;
 use Pdsinterop\Solid\Auth\Config\ServerInterface;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Utils\Base64Url;
+use Pdsinterop\Solid\Auth\Utils\DPop;
 use PHPUnit\Framework\MockObject\MockObject;
 
 function time() { return 1234;}
@@ -21,10 +22,13 @@ class TokenGeneratorTest extends AbstractTestCase
 {
     ////////////////////////////////// FIXTURES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+    const MOCK_DPOP = "mock.dpop.value";
+    const MOCK_JKT = 'mock jkt';
+
     private MockObject|Config $mockConfig;
     private MockObject|KeysInterface $mockKeys;
 
-    private function createTokenGenerator($interval = null): TokenGenerator
+    private function createTokenGenerator($interval = null, $jkt = null): TokenGenerator
     {
         $this->mockConfig = $this->getMockBuilder(Config::class)
             ->disableOriginalConstructor()
@@ -51,7 +55,19 @@ class TokenGeneratorTest extends AbstractTestCase
             ->willReturn('mock encryption key')
         ;
 
-        return new TokenGenerator($this->mockConfig, $interval??$mockInterval);
+        $mockDpopUtil = $this->getMockBuilder(DPop::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        if ($jkt) {
+            $mockDpopUtil->expects($this->once())
+                ->method('makeJwkThumbprint')
+                ->willReturn($jkt)
+            ;
+        }
+
+        return new TokenGenerator($this->mockConfig, $interval??$mockInterval, $mockDpopUtil);
     }
 
     /////////////////////////////////// TESTS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -82,6 +98,27 @@ class TokenGeneratorTest extends AbstractTestCase
             ->getMock();
 
         new TokenGenerator($mockConfig);
+    }
+
+    /**
+     * @testdox Token Generator SHOULD complain WHEN instantiated without Dpop Utility
+     *
+     * @coversNothing
+     */
+    final public function testInstantiateWithoutDpopUtility(): void
+    {
+        $this->expectArgumentCountError(3);
+
+        $mockConfig = $this->getMockBuilder(Config::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockInterval = $this->getMockBuilder(\DateInterval::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        new TokenGenerator($mockConfig, $mockInterval);
     }
 
     /**
@@ -271,14 +308,7 @@ class TokenGeneratorTest extends AbstractTestCase
     {
         $validFor = new \DateInterval('PT1S');
 
-        $tokenGenerator = $this->createTokenGenerator($validFor);
-
-        $mockKey = \Lcobucci\JWT\Signer\Key\InMemory::file(__DIR__.'/../fixtures/keys/public.key');
-
-        $this->mockKeys->expects($this->once())
-            ->method('getPublicKey')
-            ->willReturn($mockKey)
-        ;
+        $tokenGenerator = $this->createTokenGenerator($validFor, self::MOCK_JKT);
 
         $mockServer = $this->getMockBuilder(ServerInterface::class)
             ->disableOriginalConstructor()
@@ -300,26 +330,31 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
 
+        $encodedDpop = vsprintf("%s.%s.%s", [
+            'header' => Base64Url::encode('{"jwk":"mock jwk"}'),
+            'body' => Base64Url::encode('{}'),
+            'signature' => Base64Url::encode('mock signature')
+        ]);
+
         $actual = $tokenGenerator->generateIdToken(
             'mock access token',
             'mock clientId',
             'mock subject',
             'mock nonce',
             $privateKey,
-            'mock dpop',
+            $encodedDpop,
             $now
         );
 
         $this->assertJwtEquals([[
             "alg"=>"RS256",
-            "kid"=>"0c3932ca20f3a00ad2eb72035f6cc9cb",
             "typ"=>"JWT",
         ],[
+            'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
             'aud' => 'mock clientId',
             'azp' => 'mock clientId',
             'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
-            'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
-            'cnf' => ["jkt" => "mock dpop"],
+            'cnf' => ["jkt" => self::MOCK_JKT],
             'exp' => -23225829903.789,
             'iat' => -23225829904.789,
             'iss' => 'mock issuer',
