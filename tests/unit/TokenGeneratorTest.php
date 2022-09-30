@@ -278,27 +278,70 @@ class TokenGeneratorTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without dpopKey
+     * @testdox Token Generator SHOULD generate a token without Confirmation JWT Thumbprint (CNF JKT) WHEN asked to generate a IdToken without dpopKey
      *
      * @covers ::generateIdToken
      */
     final public function testIdTokenGenerationWithoutDpopKey(): void
     {
-        $tokenGenerator = $this->createTokenGenerator();
+        $validFor = new \DateInterval('PT1S');
 
-        $this->expectArgumentCountError(6);
+        $tokenGenerator = $this->createTokenGenerator($validFor);
 
-        $tokenGenerator->generateIdToken(
+
+        $mockServer = $this->getMockBuilder(ServerInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $this->mockConfig->expects($this->once())
+            ->method('getServer')
+            ->willReturn($mockServer)
+        ;
+
+        $mockServer->expects($this->once())
+            ->method('get')
+            ->with(OidcMeta::ISSUER)
+            ->willReturn('mock issuer')
+        ;
+
+        $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
+
+        $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
+
+        $token = $tokenGenerator->generateIdToken(
             'mock access token',
             'mock clientId',
             'mock subject',
             'mock nonce',
-            'mock private key'
+            $privateKey,
+            null,
+            $now,
         );
+
+        $this->assertJwtEquals([
+            [
+                'typ' => 'JWT',
+                'alg' => 'RS256',
+            ],
+            [
+                'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
+                'aud' => 'mock clientId',
+                'azp' => 'mock clientId',
+                'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
+                'exp' => -23225829903.789,
+                'iat' => -23225829904.789,
+                'iss' => 'mock issuer',
+                'jti' => '4dc20036dbd8313ed055',
+                'nbf' => -23225829905.789,
+                'nonce' => 'mock nonce',
+                'sub' => 'mock subject',
+            ],
+        ], $token);
     }
 
     /**
-     * @testdox Token Generator SHOULD return a IdToken WHEN asked to generate a IdToken with clientId and privateKey
+     * @testdox Token Generator SHOULD return a IdToken with a Confirmation JWT Thumbprint (CNF JKT) WHEN asked to generate a IdToken with clientId and privateKey and DPOP
      *
      * @covers ::generateIdToken
      *

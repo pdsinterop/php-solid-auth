@@ -52,37 +52,45 @@ class TokenGenerator
 		return $token->toString();
 	}
 
-	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpop, $now=null) {
+    /**
+     * Please note that the DPOP _is not_ required when requesting a token to
+     * authorize a client but the DPOP _is_ required when requesting an access
+     * token.
+     */
+	public function generateIdToken($accessToken, $clientId, $subject, $nonce, $privateKey, $dpop=null, $now=null) {
 		$issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
 
 		$tokenHash = $this->generateTokenHash($accessToken);
 
-                // Create JWT
-                $jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
-                $now = $now ?? new DateTimeImmutable();
-                $useAfter = $now->sub(new \DateInterval('PT1S'));
+		// Create JWT
+		$jwtConfig = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($privateKey));
+		$now = $now ?? new DateTimeImmutable();
+		$useAfter = $now->sub(new \DateInterval('PT1S'));
 
-                $expire = $now->add($this->validFor);
+		$expire = $now->add($this->validFor);
 
-        $jkt = $this->makeJwkThumbprint($dpop);
+		$token = $jwtConfig->builder()
+			->issuedBy($issuer)
+			->permittedFor($clientId)
+			->issuedAt($now)
+			->canOnlyBeUsedAfter($useAfter)
+			->expiresAt($expire)
+			->withClaim("azp", $clientId)
+			->relatedTo($subject)
+			->identifiedBy($this->generateJti())
+			->withClaim("nonce", $nonce)
+			->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
+			->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
+		;
 
-                $token = $jwtConfig->builder()
-                        ->issuedBy($issuer)
-                        ->permittedFor($clientId)
-                        ->issuedAt($now)
-                        ->canOnlyBeUsedAfter($useAfter)
-                        ->expiresAt($expire)
-                        ->withClaim("azp", $clientId)
-                        ->relatedTo($subject)
-                        ->identifiedBy($this->generateJti())
-                        ->withClaim("nonce", $nonce)
-                        ->withClaim("at_hash", $tokenHash) //FIXME: at_hash should only be added if the response_type is a token
-                        ->withClaim("c_hash", $tokenHash) // FIXME: c_hash should only be added if the response_type is a code
-                        ->withClaim("cnf", array(
-                                "jkt" => $jkt,
-                        ))
-                        ->getToken($jwtConfig->signer(), $jwtConfig->signingKey());
-                return $token->toString();
+		if ($dpop !== null) {
+			$jkt = $this->makeJwkThumbprint($dpop);
+			$token = $token->withClaim("cnf", [
+				"jkt" => $jkt,
+			]);
+		}
+
+		return $token->getToken($jwtConfig->signer(), $jwtConfig->signingKey())->toString();
 	}
 
 	public function respondToRegistration($registration, $privateKey) {
