@@ -146,7 +146,7 @@ class DPop {
 	}
 
 	/**
-	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-4.2
+	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop-11#section-4.3
 	 * When the DPoP proof is used in conjunction with the presentation of
 	 * an access token in protected resource access, see Section 7, the DPoP
 	 * proof MUST also contain the following claim:
@@ -154,7 +154,7 @@ class DPop {
      *   base64url encoding (as defined in Section 2 of [RFC7515]) the
      *   SHA-256 [SHS] hash of the ASCII encoding of the associated access
      *   token's value.
-     * See also: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-7
+     * See also: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop-11#section-7
      * 
 	 * Validates the above part of the oauth dpop specification
 	 * @param  string $jwt  JWT access token, raw
@@ -169,7 +169,10 @@ class DPop {
 		
 		$ath = $dpopJWT->claims()->get('ath');
 		if ($ath === null) {
-			throw new InvalidTokenException('DPoP "ath" claim is missing');
+			return true; 
+			// TODO: wait for the rest of the world to catch up to the oauth dpop spec
+			// and then do throw the following exception instead of returning true:
+			// throw new InvalidTokenException('DPoP "ath" claim is missing');
 		}
 		
 		$hash    = hash('sha256', $jwt);
@@ -215,7 +218,7 @@ class DPop {
 
 	/**
 	 * Validates that the DPOP token matches all requirements from 
-	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop#section-4.2
+	 * https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop-01#section-4.2
 	 *
 	 * @param string $dpop The DPOP token
 	 * @param ServerRequestInterface $request Server Request
@@ -227,6 +230,9 @@ class DPop {
 	 */
 	public function validateDpop($dpop, $request) {
 		/*
+			FIXME: update the comments to the latest oauth-dpop spec, or at least -04
+			as that is referenced in the latest solid-oidc specification
+			
 			4.2.  Checking DPoP Proofs
 			   To check if a string that was received as part of an HTTP Request is
 			   a valid DPoP proof, the receiving server MUST ensure that
@@ -248,8 +254,6 @@ class DPop {
 			   9.  that, within a reasonable consideration of accuracy and resource
 				   utilization, a JWT with the same "jti" value has not been
 				   received previously (see Section 9.1).
-			  10.  that, if used with an access token, it also contains the 'ath' 
-			       claim, with a hash of the access token
 		*/
 		// 1.  the string value is a well-formed JWT,
 		$jwtConfig = Configuration::forUnsecuredSigner();
