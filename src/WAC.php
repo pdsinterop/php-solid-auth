@@ -36,7 +36,7 @@ class WAC {
 			$wacHeaders[] = "public=\"$publicGrants\"";
 		}
 		
-		$response = $response->withHeader("Link", '<.acl>; rel="acl"');
+		$response = $response->withAddedHeader("Link", '<.acl>; rel="acl"');
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
 		$this->filesystem->getAdapter()->setFormat($currentFormat);
 		return $response;
