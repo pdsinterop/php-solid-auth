@@ -56,7 +56,7 @@ help of `League\OAuth2\Server\AuthorizationServer`.
 
 Besides a Request, Response and AuthorizationServer, the `Pdsinterop\Solid\Auth\Server` requires a Configuration and User object.
 
-A [full example](./tests/example.php) has been provided to help you understand how to integrate this library.
+A [full example](./example.php) has been provided to help you understand how to integrate this library.
 
 See the "API" section for detailed usage examples.
 
