@@ -128,8 +128,6 @@ class Server
         return $this->createJsonResponse($response, $serverConfig);
     }
 
-    final public function respondTo_Request(): Response {}
-
     ////////////////////////////// UTILITY METHODS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     private function createOauthServerExceptionResponse(Response $response, OAuthServerException $serverException): Response
