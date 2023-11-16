@@ -95,7 +95,7 @@ class Bearer {
 	 */
 	public function validateIdToken($token, $request) {
 		$jwtConfig = Configuration::forUnsecuredSigner();
-		$jwtConfig->parser()->parse($jwt);
+		$jwtConfig->parser()->parse($token);
 		return true;
 	}
 
