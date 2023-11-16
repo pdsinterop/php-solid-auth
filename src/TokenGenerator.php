@@ -4,6 +4,7 @@ namespace Pdsinterop\Solid\Auth;
 
 use Pdsinterop\Solid\Auth\Exception\InvalidTokenException;
 use Pdsinterop\Solid\Auth\Utils\DPop;
+use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Laminas\Diactoros\Response\JsonResponse;
 use League\OAuth2\Server\CryptTrait;
@@ -88,6 +89,10 @@ class TokenGenerator
 			$token = $token->withClaim("cnf", [
 				"jkt" => $jkt,
 			]);
+		} else {
+			// legacy mode
+			$jwks = $this->getJwks();
+			$token = $token->withHeader('kid', $jwks['keys'][0]['kid']);
 		}
 
 		return $token->getToken($jwtConfig->signer(), $jwtConfig->signingKey())->toString();
@@ -200,5 +205,11 @@ class TokenGenerator
 		}
 
 		return $this->dpopUtil->makeJwkThumbprint($jwk);
+	}
+
+	private function getJwks() {
+		$key = $this->config->getKeys()->getPublicKey();
+		$jwks = new Jwks($key);
+		return json_decode($jwks->__toString(), true);
 	}
 }
