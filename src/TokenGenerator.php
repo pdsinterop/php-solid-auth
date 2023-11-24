@@ -210,6 +210,6 @@ class TokenGenerator
 	private function getJwks() {
 		$key = $this->config->getKeys()->getPublicKey();
 		$jwks = new Jwks($key);
-		return json_decode($jwks->__toString(), true);
+		return json_decode((string) $jwks, true);
 	}
 }
