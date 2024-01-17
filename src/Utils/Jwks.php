@@ -3,7 +3,7 @@
 namespace Pdsinterop\Solid\Auth\Utils;
 
 use JsonSerializable;
-use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Key as Key;
 use Pdsinterop\Solid\Auth\Enum\Jwk\Parameter as JwkParameter;
 use Pdsinterop\Solid\Auth\Enum\Rsa\Parameter as RsaParameter;
 
@@ -11,12 +11,12 @@ class Jwks implements JsonSerializable
 {
     ////////////////////////////// CLASS PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    /** @var InMemory */
+    /** @var Key */
     private $publicKey;
 
     //////////////////////////////// PUBLIC API \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    final public function __construct(InMemory $publicKey)
+    final public function __construct(Key $publicKey)
     {
         $this->publicKey = $publicKey;
     }
@@ -64,9 +64,8 @@ class Jwks implements JsonSerializable
 
         $publicKeys = [$this->publicKey];
 
-        array_walk($publicKeys, function (InMemory $publicKey) use (&$jwks) {
+        array_walk($publicKeys, function (Key $publicKey) use (&$jwks) {
             $certificate = $publicKey->contents();
-
             $key = openssl_pkey_get_public($certificate);
             $keyInfo = openssl_pkey_get_details($key);
 

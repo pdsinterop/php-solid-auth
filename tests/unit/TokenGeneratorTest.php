@@ -281,6 +281,8 @@ class TokenGeneratorTest extends AbstractTestCase
      * @testdox Token Generator SHOULD generate a token without Confirmation JWT Thumbprint (CNF JKT) WHEN asked to generate a IdToken without dpopKey
      *
      * @covers ::generateIdToken
+     *
+     * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
      */
     final public function testIdTokenGenerationWithoutDpopKey(): void
     {
@@ -305,6 +307,22 @@ class TokenGeneratorTest extends AbstractTestCase
             ->willReturn('mock issuer')
         ;
 
+        $publicKey = file_get_contents(__DIR__.'/../fixtures/keys/public.key');
+
+        $mockPublicKey = $this->getMockBuilder(\Lcobucci\JWT\Signer\Key::class)
+            ->getMock()
+        ;
+
+        $mockPublicKey->expects($this->once())
+            ->method('contents')
+            ->willReturn($publicKey)
+        ;
+
+        $this->mockKeys->expects($this->once())
+            ->method('getPublicKey')
+            ->willReturn($mockPublicKey)
+        ;
+
         $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
 
         $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
@@ -323,6 +341,7 @@ class TokenGeneratorTest extends AbstractTestCase
             [
                 'typ' => 'JWT',
                 'alg' => 'RS256',
+                'kid' => '0c3932ca20f3a00ad2eb72035f6cc9cb'
             ],
             [
                 'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
