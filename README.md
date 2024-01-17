@@ -100,5 +100,5 @@ All code created by PDS Interop is licensed under the [MIT License][license-link
 [project-stage-page]: https://blog.pother.ca/project-stages/
 [standard-readme-link]: https://github.com/RichardLitt/standard-readme
 [standard-readme-shield]: https://img.shields.io/badge/-Standard%20Readme-brightgreen.svg
-[version-link]: https://packagist.org/packages/pdsinterop/php-solid-auth
+[version-link]: https://packagist.org/packages/pdsinterop/solid-auth
 [version-shield]: https://img.shields.io/github/v/release/pdsinterop/php-solid-auth.svg?sort=semver
