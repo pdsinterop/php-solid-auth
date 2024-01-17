@@ -318,7 +318,7 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $this->mockKeys->expects($this->once())
             ->method('getPublicKey')
-            ->willReturn($this->mockPublicKey)
+            ->willReturn($mockPublicKey)
         ;
 
         $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
