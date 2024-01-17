@@ -22,6 +22,9 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * This class contains code to fetch the WebId from a request
  * that is make in legacy mode (bearer token with pop)
+ *
+ * @ TODO: Make sure this code complies with the spec and validate the tokens properly;
+ * https://datatracker.ietf.org/doc/html/rfc7800
  */
 class Bearer {
 
