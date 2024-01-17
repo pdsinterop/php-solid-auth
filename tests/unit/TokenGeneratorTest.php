@@ -281,6 +281,8 @@ class TokenGeneratorTest extends AbstractTestCase
      * @testdox Token Generator SHOULD generate a token without Confirmation JWT Thumbprint (CNF JKT) WHEN asked to generate a IdToken without dpopKey
      *
      * @covers ::generateIdToken
+     *
+     * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
      */
     final public function testIdTokenGenerationWithoutDpopKey(): void
     {
