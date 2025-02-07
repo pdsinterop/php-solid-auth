@@ -140,7 +140,7 @@ class DPop {
 				$jwk['y']
 			]);			
 		}
-		$hash    = hash('sha256', json_encode($json), true);
+		$hash    = hash('sha256', $json, true);
 		$encoded = Base64Url::encode($hash);
 		return $encoded;
 	}
