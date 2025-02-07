@@ -619,6 +619,27 @@ class DPOPTest extends AbstractTestCase
         $this->assertEquals(self::MOCK_SUBJECT, $actual);
     }
 
+    /**
+     * @testdox makeJwkThumbprint test with a known key and expected result
+     *
+     * @covers ::makeJwkThumbprint
+     *
+     * @uses \Pdsinterop\Solid\Auth\Utils\DPop::makeJwkThumbprint
+     */
+    final public function testMakeJwkThumbprint(): void
+    {
+        $mockJtiValidator = $this->createMockJtiValidator();
+        $dpop = new DPop($mockJtiValidator);
+
+        // Example thumbprint calculation from https://www.rfc-editor.org/rfc/rfc7638#ref-SHS
+        $jwk = json_decode('{"kty": "RSA","n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e": "AQAB","alg": "RS256","kid": "2011-04-29"}', true);
+        $expectedThumbprint = 'NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs';
+
+        $actual = $dpop->makeJwkThumbprint($jwk);
+
+        $this->assertEquals($expectedThumbprint, $actual);
+    }
+
     ////////////////////////////// MOCKS AND STUBS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     private function createMockJtiValidator()
