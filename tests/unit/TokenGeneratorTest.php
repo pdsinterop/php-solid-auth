@@ -236,6 +236,8 @@ class TokenGeneratorTest extends AbstractTestCase
      * @covers ::generateIdToken
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
+     * @uses ::bindAccessToken
+     * @uses ::signToken
      */
     final public function testIdTokenGenerationWithoutDpopKey(): void
     {
@@ -329,6 +331,8 @@ class TokenGeneratorTest extends AbstractTestCase
      * @covers ::generateIdToken
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
+     * @uses ::bindAccessToken
+     * @uses ::signToken
      */
     final public function testIdTokenGeneration(): void
     {
