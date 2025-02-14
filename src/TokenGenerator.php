@@ -78,10 +78,12 @@ class TokenGenerator
     }
 
     public function bindDpop($dpop, $accessToken) {
-        $jkt = $this->makeJwkThumbprint($dpop);
-        $accessToken['payload']['cnf'] = [
-            'jkt' => $jkt
-        ];
+        if ($dpop) {
+            $jkt = $this->makeJwkThumbprint($dpop);
+            $accessToken['payload']['cnf'] = [
+                'jkt' => $jkt
+            ];
+        }
         return $accessToken;
     }
 
@@ -197,7 +199,7 @@ class TokenGenerator
 
                 $body['access_token'] = $accessToken;
                 $body['id_token'] = $idToken;
-                $body['refresh_token'] = str_repeat('a', 209); // FIXME: Remove this, DO NOT MERGE. Podpro doesn't like refresh tokens longer than 209 characters;
+                // $body['refresh_token'] = str_repeat('a', 209); // FIXME: Remove this, DO NOT MERGE. Podpro doesn't like refresh tokens longer than 209 characters;
 
                 return new JsonResponse($body);
             } catch (\Exception $e) {
