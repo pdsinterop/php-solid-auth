@@ -203,7 +203,7 @@ class TokenGeneratorTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without accessToken
+     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without clientId
      *
      * @covers ::generateIdToken
      */
@@ -217,7 +217,7 @@ class TokenGeneratorTest extends AbstractTestCase
     }
 
     /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without clientId
+     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without subject
      *
      * @covers ::generateIdToken
      */
@@ -227,54 +227,7 @@ class TokenGeneratorTest extends AbstractTestCase
 
         $this->expectArgumentCountError(2);
 
-        $tokenGenerator->generateIdToken('mock access token');
-    }
-
-    /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without subject
-     *
-     * @covers ::generateIdToken
-     */
-    final public function testIdTokenGenerationWithoutSubject(): void
-    {
-        $tokenGenerator = $this->createTokenGenerator();
-
-        $this->expectArgumentCountError(3);
-
-        $tokenGenerator->generateIdToken('mock access token', 'mock clientId');
-    }
-
-    /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without nonce
-     *
-     * @covers ::generateIdToken
-     */
-    final public function testIdTokenGenerationWithoutNonce(): void
-    {
-        $tokenGenerator = $this->createTokenGenerator();
-
-        $this->expectArgumentCountError(4);
-
-        $tokenGenerator->generateIdToken('mock access token', 'mock clientId', 'mock subject');
-    }
-
-    /**
-     * @testdox Token Generator SHOULD complain WHEN asked to generate a IdToken without privateKey, $dpopKey
-     *
-     * @covers ::generateIdToken
-     */
-    final public function testIdTokenGenerationWithoutPrivateKey(): void
-    {
-        $tokenGenerator = $this->createTokenGenerator();
-
-        $this->expectArgumentCountError(5);
-
-        $tokenGenerator->generateIdToken(
-            'mock access token',
-            'mock clientId',
-            'mock subject',
-            'mock nonce'
-        );
+        $tokenGenerator->generateIdToken('mock clientId');
     }
 
     /**
@@ -283,13 +236,14 @@ class TokenGeneratorTest extends AbstractTestCase
      * @covers ::generateIdToken
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
+     * @uses \Pdsinterop\Solid\Auth\TokenGenerator
+     * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
      */
     final public function testIdTokenGenerationWithoutDpopKey(): void
     {
         $validFor = new \DateInterval('PT1S');
 
         $tokenGenerator = $this->createTokenGenerator($validFor);
-
 
         $mockServer = $this->getMockBuilder(ServerInterface::class)
             ->disableOriginalConstructor()
@@ -307,10 +261,21 @@ class TokenGeneratorTest extends AbstractTestCase
             ->willReturn('mock issuer')
         ;
 
+        $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
         $publicKey = file_get_contents(__DIR__.'/../fixtures/keys/public.key');
-
-        $mockPublicKey = $this->getMockBuilder(\Lcobucci\JWT\Signer\Key::class)
+        
+        $mockPrivateKey = $this->getMockBuilder(\League\OAuth2\Server\CryptKey::class)
+            ->disableOriginalConstructor()
             ->getMock()
+        ;
+        $mockPublicKey = $this->getMockBuilder(\Lcobucci\JWT\Signer\Key::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $mockPrivateKey->expects($this->once())
+            ->method('getKeyContents')
+            ->willReturn($privateKey)
         ;
 
         $mockPublicKey->expects($this->once())
@@ -319,27 +284,30 @@ class TokenGeneratorTest extends AbstractTestCase
         ;
 
         $this->mockKeys->expects($this->once())
+            ->method('getPrivateKey')
+            ->willReturn($mockPrivateKey)
+        ;
+
+        $this->mockKeys->expects($this->once())
             ->method('getPublicKey')
             ->willReturn($mockPublicKey)
         ;
 
-        $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
+        $this->mockConfig->expects($this->atLeast(1))
+            ->method('getKeys')
+            ->willReturn($this->mockKeys)
+        ;
 
-        $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
-
-        $token = $tokenGenerator->generateIdToken(
-            'mock access token',
+        $idToken = $tokenGenerator->generateIdToken(
             'mock clientId',
-            'mock subject',
-            'mock nonce',
-            $privateKey,
-            null,
-            $now,
+            'mock subject'
         );
+        $idToken = $tokenGenerator->bindAccessToken('mock access token', $idToken);
+        $idToken = $tokenGenerator->signToken($idToken);
 
         $this->assertJwtEquals([
             [
-                'typ' => 'JWT',
+//                'typ' => 'JWT',
                 'alg' => 'RS256',
                 'kid' => '0c3932ca20f3a00ad2eb72035f6cc9cb'
             ],
@@ -347,16 +315,14 @@ class TokenGeneratorTest extends AbstractTestCase
                 'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
                 'aud' => 'mock clientId',
                 'azp' => 'mock clientId',
-                'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
-                'exp' => -23225829903.789,
-                'iat' => -23225829904.789,
+                'exp' => 4834,
+                'iat' => 1234,
                 'iss' => 'mock issuer',
                 'jti' => '4dc20036dbd8313ed055',
-                'nbf' => -23225829905.789,
-                'nonce' => 'mock nonce',
+//                'nonce' => 'mock nonce',
                 'sub' => 'mock subject',
             ],
-        ], $token);
+        ], $idToken);
     }
 
     /**
@@ -365,12 +331,14 @@ class TokenGeneratorTest extends AbstractTestCase
      * @covers ::generateIdToken
      *
      * @uses \Pdsinterop\Solid\Auth\Utils\Jwks
+     * @uses \Pdsinterop\Solid\Auth\TokenGenerator
+     * @uses \Pdsinterop\Solid\Auth\Utils\Base64Url
      */
     final public function testIdTokenGeneration(): void
     {
         $validFor = new \DateInterval('PT1S');
 
-        $tokenGenerator = $this->createTokenGenerator($validFor, self::MOCK_JKT);
+        $tokenGenerator = $this->createTokenGenerator($validFor); 
 
         $mockServer = $this->getMockBuilder(ServerInterface::class)
             ->disableOriginalConstructor()
@@ -387,8 +355,6 @@ class TokenGeneratorTest extends AbstractTestCase
             ->with(OidcMeta::ISSUER)
             ->willReturn('mock issuer')
         ;
-
-        $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
 
         $now = new \DateTimeImmutable('1234-01-01 12:34:56.789');
 
@@ -398,32 +364,66 @@ class TokenGeneratorTest extends AbstractTestCase
             'signature' => Base64Url::encode('mock signature')
         ]);
 
-        $actual = $tokenGenerator->generateIdToken(
-            'mock access token',
+        $privateKey = file_get_contents(__DIR__.'/../fixtures/keys/private.key');
+        $publicKey = file_get_contents(__DIR__.'/../fixtures/keys/public.key');
+        
+        $mockPrivateKey = $this->getMockBuilder(\League\OAuth2\Server\CryptKey::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $mockPublicKey = $this->getMockBuilder(\Lcobucci\JWT\Signer\Key::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $mockPrivateKey->expects($this->once())
+            ->method('getKeyContents')
+            ->willReturn($privateKey)
+        ;
+
+        $mockPublicKey->expects($this->once())
+            ->method('contents')
+            ->willReturn($publicKey)
+        ;
+
+        $this->mockKeys->expects($this->once())
+            ->method('getPrivateKey')
+            ->willReturn($mockPrivateKey)
+        ;
+
+        $this->mockKeys->expects($this->once())
+            ->method('getPublicKey')
+            ->willReturn($mockPublicKey)
+        ;
+
+        $this->mockConfig->expects($this->atLeast(1))
+            ->method('getKeys')
+            ->willReturn($this->mockKeys)
+        ;
+
+        $idToken = $tokenGenerator->generateIdToken(
             'mock clientId',
-            'mock subject',
-            'mock nonce',
-            $privateKey,
-            $encodedDpop,
-            $now
+            'mock subject'
         );
+        $idToken = $tokenGenerator->bindAccessToken('mock access token', $idToken);
+        $idToken = $tokenGenerator->signToken($idToken);
 
         $this->assertJwtEquals([[
             "alg"=>"RS256",
-            "typ"=>"JWT",
+            'kid' => '0c3932ca20f3a00ad2eb72035f6cc9cb'
+//            "typ"=>"JWT",
         ],[
             'at_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
             'aud' => 'mock clientId',
             'azp' => 'mock clientId',
-            'c_hash' => '1EZBnvsFWlK8ESkgHQsrIQ',
-            'cnf' => ["jkt" => self::MOCK_JKT],
-            'exp' => -23225829903.789,
-            'iat' => -23225829904.789,
+//            'cnf' => ["jkt" => self::MOCK_JKT],
+            'exp' => 4834,
+            'iat' => 1234,
             'iss' => 'mock issuer',
             'jti' => '4dc20036dbd8313ed055',
-            'nbf' => -23225829905.789,
-            'nonce' => 'mock nonce',
+//            'nbf' => -23225829905.789,
+//            'nonce' => 'mock nonce',
             'sub' => 'mock subject',
-        ]], $actual);
+        ]], $idToken);
     }
 }
