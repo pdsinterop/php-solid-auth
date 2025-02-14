@@ -108,6 +108,13 @@ class TokenGenerator
         return $idToken;
     }
 
+    public function bindNonce($nonce, $idToken) {
+        if ($nonce) {
+            $idToken['payload']['nonce'] = $nonce;
+        }
+        return $idToken;
+    }
+
     public function bindAccessToken($accessToken, $idToken) {
         $tokenHash = $this->generateTokenHash($accessToken);
         $idToken['payload']['at_hash'] = $tokenHash;
@@ -161,12 +168,14 @@ class TokenGenerator
             if (preg_match("/#access_token=(.*?)&/", $value, $matches)) {
                 $idToken = $this->generateIdToken($clientId, $subject);
                 $idToken = $this->bindAccessToken($matches[1], $idToken);
+                $idToken = $this->bindNonce($nonce, $idToken);
                 $idToken = $this->signToken($idToken);
                 $value = preg_replace("/#access_token=(.*?)&/", "#access_token=\$1&id_token=$idToken&", $value);
                 $response = $response->withHeader("Location", $value);
             } else if (preg_match("/code=(.*?)&/", $value, $matches)) {
                 $idToken = $this->generateIdToken($clientId, $subject);
                 $idToken = $this->bindCode($matches[1], $idToken);
+                $idToken = $this->bindNonce($nonce, $idToken);
                 $idToken = $this->signToken($idToken);
                 $value = preg_replace("/code=(.*?)&/", "code=\$1&id_token=$idToken&", $value);
                 $response = $response->withHeader("Location", $value);
@@ -183,6 +192,7 @@ class TokenGenerator
 
                 $idToken = $this->generateIdToken($clientId, $subject);
                 $idToken = $this->bindAccessToken($accessToken, $idToken);
+                $idToken = $this->bindNonce($nonce, $idToken);
                 $idToken = $this->signToken($idToken);
 
                 $body['access_token'] = $accessToken;
