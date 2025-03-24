@@ -36,7 +36,7 @@
   },
   "scripts": {
     "tests:example": "php -S localhost:8080 -t ./tests/ ./tests/example.php",
-    "tests:unit": "phpunit ./tests/unit"
+    "tests:unit": "phpunit --configuration `.config/phpunit.xml.dist` ./tests/unit"
   },
   "scripts-descriptions": {
     "tests:example": "Run internal PHP development server with example code",
