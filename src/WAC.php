@@ -370,7 +370,7 @@ class WAC {
 		// Special case: restrict access to all .acl files.
 		// Control is needed to do anything with them,
 		// having Control allows all operations.
-		if (preg_match('/.acl$/', $path)) {
+		if (preg_match('/\.acl$/', $path)) {
 			return array(
 				array(
 					"type" => "resource",
