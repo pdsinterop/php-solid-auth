@@ -53,10 +53,10 @@ class WAC {
 		$uri = $request->getUri();
 		$parentUri = $this->getParentUri($uri);
 
-	// @FIXME: $origin can be anything at this point, null, string, array, bool
-	//	 This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
+		// @FIXME: $origin can be anything at this point, null, string, array, bool
+		//	 This causes trouble downstream where an unchecked `parse_url($origin)['host'];` occurs
 
-	foreach ($requestedGrants as $requestedGrant) {
+		foreach ($requestedGrants as $requestedGrant) {
 			switch ($requestedGrant['type']) {
 				case "resource":
 					if ($this->isPublicGranted($requestedGrant['grants'], $uri)) {
@@ -141,9 +141,9 @@ class WAC {
 		) {
 			return true;
 		}
-		//error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
+		// error_log("REQUESTED GRANT: " . join(" or ", $requestedGrants) . " on $uri");
 		$grants = $this->getOriginGrants($uri, $origin);
-		//error_log("GRANTED GRANTS for origin $origin: " . json_encode($grants));
+		// error_log("GRANTED GRANTS for origin $origin: " . json_encode($grants));
 		return $this->checkGrants($requestedGrants, $uri, $grants);
 	}
 
@@ -307,14 +307,13 @@ class WAC {
 
 		foreach ($aclOptions as $aclPath) {
 			if (
-				$this->filesystem->has($aclPath)
-		&& $this->filesystem->read($aclPath) !== false
+				$this->filesystem->has($aclPath) && $this->filesystem->read($aclPath) !== false
 			) {
 				return $aclPath;
 			}
 		}
 
-		//error_log("Seeking .acl from $path");
+		// error_log("Seeking .acl from $path");
 		// see: https://github.com/solid/web-access-control-spec#acl-inheritance-algorithm
 		// check for acl:default predicate, if not found, continue searching up the directory tree
 		return $this->getParentAcl($path);
@@ -323,10 +322,10 @@ class WAC {
 		return preg_replace("|//|", "/", $path);
 	}
 	private function getParentAcl($path) {
-		//error_log("GET PARENT ACL $path");
-		if ($this->filesystem->has($path.'/.acl')) {
-			//error_log("CHECKING ACL FILE ON $path/.acl");
-			return $path . "/.acl";
+		// error_log("GET PARENT ACL $path");
+		if ($this->filesystem->has($this->normalizePath($path.'/.acl'))) {
+			// error_log("CHECKING ACL FILE ON $path/.acl");
+			return $this->normalizePath($path . "/.acl");
 		}
 		$parent = dirname($path);
 		if ($parent == $path) {
