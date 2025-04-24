@@ -187,6 +187,9 @@ class TokenGenerator
             $responseBody = $response->getBody()->getContents();
             try {
                 $body = json_decode($responseBody, true);
+                if (isset($body['error'])) {
+                    return $response;
+                }
 
                 $accessToken = $this->generateAccessToken($clientId, $subject);
                 $accessToken = $this->bindDpop($dpop, $accessToken);
