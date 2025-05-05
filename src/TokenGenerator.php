@@ -190,6 +190,7 @@ class TokenGenerator
                 if (isset($body['error'])) {
                     return $response;
                 }
+
                 $accessToken = $this->generateAccessToken($clientId, $subject);
                 $accessToken = $this->bindDpop($dpop, $accessToken);
                 $accessToken = $this->signToken($accessToken);
