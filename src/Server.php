@@ -59,9 +59,9 @@ class Server
 
     final public function respondToAuthorizationRequest(
         Request $request,
-        User $user = null,
-        bool $authorizationApproved = null,
-        callable $callback = null
+        ?User $user = null,
+        ?bool $authorizationApproved = null,
+        ?callable $callback = null
     ) : Response {
         $serverConfig = $this->config->getServer();
         $authorizationServer = $this->authorizationServer;

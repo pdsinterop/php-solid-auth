@@ -20,9 +20,9 @@ class Client implements ClientEntityInterface
      * @param bool $isConfidential
      */
     public function __construct(
-        string $identifier = null,
-        string $name = null,
-        array $redirectUri = null,
+        ?string $identifier = null,
+        ?string $name = null,
+        ?array $redirectUri = null,
         bool $isConfidential = false
     ) {
         $this->isConfidential = $isConfidential;
