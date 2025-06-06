@@ -323,7 +323,7 @@ class DPop {
 		// 	   parts,
 
                 $requestedPath = (string)$request->getUri();
-                $requestedPath = preg_replace("/[?#].*$/", "", $requestedPath);
+                $requestedPath = preg_replace("/[?#].*$/", "", $requestedPath); // Used in htu and jti check;
                 $htuClean = preg_replace("/[?#].*$/", "", $htu);
                 // error_log("REQUESTED HTU $htu");
                 // error_log("REQUESTED HTU cleaned $htuClean");
@@ -346,7 +346,7 @@ class DPop {
 		if ($jti === null) {
 			throw new InvalidTokenException("jti is missing");
 		}
-		$isJtiValid = $this->jtiValidator->validate($jti, (string) $request->getUri());
+		$isJtiValid = $this->jtiValidator->validate($jti, $requestedPath);
 		if (! $isJtiValid) {
 			throw new InvalidTokenException("jti is invalid");
 		}
