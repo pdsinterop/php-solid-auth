@@ -73,7 +73,11 @@ class Server
             // Validate the HTTP request and return an AuthorizationRequest object.
             $authRequest = $authorizationServer->validateAuthorizationRequest($request);
         } catch (OAuthServerException $serverException) {
-            return $this->createOauthServerExceptionResponse($response, $serverException);
+            $httpResponse = $this->createOauthServerExceptionResponse($response, $serverException);
+            // @CHECKME: Is this a 302 redirect? If so, a `iss` query param should be added to the redirect URL in the Location header
+            $httpResponse = $this->addIssuerToRedirectUrl($httpResponse);
+
+            return $httpResponse;
         }
 
         if ($user instanceof UserEntityInterface) {
