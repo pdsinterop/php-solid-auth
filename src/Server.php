@@ -40,10 +40,12 @@ class Server
         $response = $this->response;
 
         try {
-            return $authorizationServer->respondToAccessTokenRequest($request, $response);
+            $httpResponse = $authorizationServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $serverException) {
-            return $this->createOauthServerExceptionResponse($response, $serverException);
+            $httpResponse = $this->createOauthServerExceptionResponse($response, $serverException);
         }
+
+        return $this->addIssuerToRedirectUrl($httpResponse);
     }
 
     /**
@@ -71,7 +73,11 @@ class Server
             // Validate the HTTP request and return an AuthorizationRequest object.
             $authRequest = $authorizationServer->validateAuthorizationRequest($request);
         } catch (OAuthServerException $serverException) {
-            return $this->createOauthServerExceptionResponse($response, $serverException);
+            $httpResponse = $this->createOauthServerExceptionResponse($response, $serverException);
+            // @CHECKME: Is this a 302 redirect? If so, a `iss` query param should be added to the redirect URL in the Location header
+            $httpResponse = $this->addIssuerToRedirectUrl($httpResponse);
+
+            return $httpResponse;
         }
 
         if ($user instanceof UserEntityInterface) {
@@ -95,6 +101,7 @@ class Server
 
             // Return the HTTP redirect response
             $response = $authorizationServer->completeAuthorizationRequest($authRequest, $response);
+            $response = $this->addIssuerToRedirectUrl($response);
         } else {
             // @CHECKME: 404 or throw Exception?
             $response = $response->withStatus(404);
@@ -149,5 +156,41 @@ class Server
         }
 
         return $response->withHeader('content-type', 'application/json; charset=UTF-8');
+    }
+
+    /**
+     * Add `iss` query param to the Location header, if present and not already set.
+     *
+     * @see https://www.ietf.org/rfc/rfc9207
+     */
+    private function addIssuerToRedirectUrl(Response $response): Response
+    {
+        if ($response->hasHeader('Location')) {
+            $location = $response->getHeaderLine('Location');
+
+            $urlParts = parse_url($location);
+            $queryParams = [];
+            if (isset($urlParts['query'])) {
+                parse_str($urlParts['query'], $queryParams);
+            }
+
+            if ( ! array_key_exists('iss', $queryParams)) {
+                $issuer = $this->config->getServer()->get(OidcMeta::ISSUER);
+                $queryParams['iss'] = $issuer;
+
+                $urlParts['query'] = http_build_query($queryParams);
+
+                $location = vsprintf("%s%s%s?%s", [
+                    isset($urlParts['scheme']) ? $urlParts['scheme'] . '://' : '',
+                    $urlParts['host'] ?? '',
+                    $urlParts['path'] ?? '',
+                    $urlParts['query']
+                ]);
+
+                $response = $response->withHeader('Location', $location);
+            }
+        }
+
+        return $response;
     }
 }
