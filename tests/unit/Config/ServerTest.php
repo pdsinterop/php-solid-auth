@@ -108,7 +108,7 @@ class ServerTest extends TestCase
             'token_types_supported' => ['legacyPop','dpop'],
             'response_modes_supported' => ['query', 'fragment'],
             'grant_types_supported' => ['authorization_code', 'implicit', 'refresh_token', 'client_credentials'],
-            'token_endpoint_auth_methods_supported' => 'client_secret_basic',
+            'token_endpoint_auth_methods_supported' => ['client_secret_basic'],
             'token_endpoint_auth_signing_alg_values_supported' => ['RS256'],
             'display_values_supported' => [],
             'claim_types_supported' => ['normal'],
