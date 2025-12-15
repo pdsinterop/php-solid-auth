@@ -22,11 +22,21 @@ class AuthorizationServerFactory
     final public function __construct(Config $config)
     {
         $this->config = $config;
+        $client = $config->getClient();
+        $this->repositoryFactory = new RepositoryFactory([
+            Repository::CLIENT => new Client(
+                $client->getIdentifier(),
+                $client->getSecret(),
+                $client->getName(),
+                $grantTypes,
+                $client->getRedirectUris()
+            ),
+        ]);
     }
 
-    final public function setRepositoryFactory(RepositoryFactory $repositoryFactory)
+    final public function setRepository($type, $repository)
     {
-        $this->repositoryFactory = $repositoryFactory;
+        $this->repositoryFactory->setRepository($type, $repository);
     }
 
     final public function create() : AuthorizationServer
@@ -38,15 +48,7 @@ class AuthorizationServerFactory
         $grantTypes = $config->getGrantTypes();
         $keys = $config->getKeys();
 
-        $repositoryFactory = $this->repositoryFactory ?? new RepositoryFactory([
-            Repository::CLIENT => new Client(
-                $client->getIdentifier(),
-                $client->getSecret(),
-                $client->getName(),
-                $grantTypes,
-                $client->getRedirectUris()
-            ),
-        ]);
+        $repositoryFactory = $this->repositoryFactory;
 
         $server = new AuthorizationServer(
             $repositoryFactory->createClientRepository(),
