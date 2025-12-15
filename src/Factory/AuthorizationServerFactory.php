@@ -23,6 +23,7 @@ class AuthorizationServerFactory
     {
         $this->config = $config;
         $client = $config->getClient();
+        $grantTypes = $config->getGrantTypes();
         $this->repositoryFactory = new RepositoryFactory([
             Repository::CLIENT => new Client(
                 $client->getIdentifier(),
