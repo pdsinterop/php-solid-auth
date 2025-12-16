@@ -61,7 +61,7 @@ class Server implements ServerInterface
 			OidcMeta::TOKEN_TYPES_SUPPORTED => array("legacyPop","dpop"),
 			OidcMeta::RESPONSE_MODES_SUPPORTED => array("query","fragment"),
 			OidcMeta::GRANT_TYPES_SUPPORTED => array("authorization_code","implicit","refresh_token","client_credentials"),
-			OidcMeta::TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED => "client_secret_basic",
+			OidcMeta::TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED => ["client_secret_basic"],
 			OidcMeta::TOKEN_ENDPOINT_AUTH_SIGNING_ALG_VALUES_SUPPORTED => ["RS256"],
 			OidcMeta::CODE_CHALLENGE_METHODS_SUPPORTED => ["S256"],
 			OidcMeta::DPOP_SIGNING_ALG_VALUES_SUPPORTED => ["RS256"],
