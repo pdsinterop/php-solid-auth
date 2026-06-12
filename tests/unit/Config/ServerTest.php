@@ -41,6 +41,7 @@ class ServerTest extends TestCase
             OidcMeta::JWKS_URI,
             OidcMeta::RESPONSE_TYPES_SUPPORTED,
             OidcMeta::SUBJECT_TYPES_SUPPORTED,
+            OidcMeta::AUTHORIZATION_RESPONSE_ISS_PARAMETER_SUPPORTED,
         ];
 
         self::assertEquals($expected, $actual);
@@ -119,7 +120,8 @@ class ServerTest extends TestCase
             'require_request_uri_registration' => false,
             'code_challenge_methods_supported' => ['S256'],
             'dpop_signing_alg_values_supported' => ['RS256'],
-            'scopes_supported' => ['webid']
+            'scopes_supported' => ['webid'],
+            'authorization_response_iss_parameter_supported' => true,
         ], $actual);
     }
 }

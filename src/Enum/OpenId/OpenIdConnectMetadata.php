@@ -223,4 +223,5 @@ class OpenIdConnectMetadata extends AbstractEnum
 	public const TOKEN_TYPES_SUPPORTED = 'token_types_supported';
 	public const CHECK_SESSION_IFRAME = 'check_session_iframe';
 	public const END_SESSION_ENDPOINT = 'end_session_endpoint';
+	public const AUTHORIZATION_RESPONSE_ISS_PARAMETER_SUPPORTED = 'authorization_response_iss_parameter_supported'; // as per [RFC9207]
 }

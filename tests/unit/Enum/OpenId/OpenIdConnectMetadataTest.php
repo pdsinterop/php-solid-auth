@@ -56,7 +56,8 @@ class OpenIdConnectMetadataTest extends TestCase
             'userinfo_signing_alg_values_supported',
             'token_types_supported',
             'check_session_iframe',
-            'end_session_endpoint'
+            'end_session_endpoint',
+            'authorization_response_iss_parameter_supported'
         ];
     }
 
