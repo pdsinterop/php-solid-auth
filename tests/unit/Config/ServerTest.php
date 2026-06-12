@@ -121,7 +121,7 @@ class ServerTest extends TestCase
             'code_challenge_methods_supported' => ['S256'],
             'dpop_signing_alg_values_supported' => ['RS256'],
             'scopes_supported' => ['webid'],
-            'authorization_response_iss_parameter_supported' => true,',
+            'authorization_response_iss_parameter_supported' => true,
         ], $actual);
     }
 }
