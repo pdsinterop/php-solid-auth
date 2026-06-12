@@ -40,10 +40,12 @@ class Server
         $response = $this->response;
 
         try {
-            return $authorizationServer->respondToAccessTokenRequest($request, $response);
+            $response = $authorizationServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $serverException) {
-            return $this->createOauthServerExceptionResponse($response, $serverException);
+            $response = $this->createOauthServerExceptionResponse($response, $serverException);
         }
+        $response = $this->addIssuerToResponse($response);
+        return $response;
     }
 
     /**
@@ -71,7 +73,9 @@ class Server
             // Validate the HTTP request and return an AuthorizationRequest object.
             $authRequest = $authorizationServer->validateAuthorizationRequest($request);
         } catch (OAuthServerException $serverException) {
-            return $this->createOauthServerExceptionResponse($response, $serverException);
+            $response = $this->createOauthServerExceptionResponse($response, $serverException);
+            $response = $this->addIssuerToResponse($response);
+            return $response;
         }
 
         if ($user instanceof UserEntityInterface) {
