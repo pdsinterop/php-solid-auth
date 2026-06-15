@@ -44,8 +44,8 @@ class Server
             $response = $authorizationServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $serverException) {
             $response = $this->createOauthServerExceptionResponse($response, $serverException);
+            $response = $this->addIssuerToResponse($response);
         }
-        $response = $this->addIssuerToResponse($response);
         return $response;
     }
 
