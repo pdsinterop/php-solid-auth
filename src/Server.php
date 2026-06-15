@@ -10,6 +10,7 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Laminas\Diactoros\Uri;
 
 class Server
 {
