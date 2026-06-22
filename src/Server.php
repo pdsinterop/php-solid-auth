@@ -100,7 +100,7 @@ class Server
 
             // Return the HTTP redirect response
             $response = $authorizationServer->completeAuthorizationRequest($authRequest, $response);
-            $this->addIssuerToResponse($response); // add  &iss=... to the response to comply with RFC 9207
+            $response = $this->addIssuerToResponse($response); // add  &iss=... to the response to comply with RFC 9207
         } else {
             // @CHECKME: 404 or throw Exception?
             $response = $response->withStatus(404);
@@ -117,20 +117,21 @@ class Server
 
     public function addIssuerToResponse($response): Response
     {
-        // Adds &iss=... to the response to comply with RFC 9207
-        $location = $response->getHeaderLine('Location');
-        $uri = new Uri($location);
+        // Adds &iss=... to the response to comply with RFC 9207 
+        if ($response->hasHeader("Location")) {
+            $location = $response->getHeaderLine('Location');
+            $uri = new Uri($location);
 
-        parse_str($uri->getQuery(), $params);
-        $params['iss'] = $this->config->getServer()->get(OidcMeta::ISSUER);
+            parse_str($uri->getQuery(), $params);
+            $params['iss'] = $this->config->getServer()->get(OidcMeta::ISSUER);
 
-        $uri = $uri->withQuery(http_build_query($params));
+            $uri = $uri->withQuery(http_build_query($params));
 
-        $response = $response->withHeader(
-            'Location',
-            (string) $uri
-        );
-
+            $response = $response->withHeader(
+                'Location',
+                (string) $uri
+            );
+        }
         return $response;
     }
 
