@@ -26,6 +26,11 @@ class RepositoryFactory
         $this->repositories = $repositories;
     }
 
+    public function setRepository($type, $repository)
+    {
+        $this->repositories[$type] = $repository;
+    }
+    
     final public function createAccessTokenRepository() : AccessTokenRepositoryInterface
     {
         return $this->createOnce(Repository::ACCESS_TOKEN);
