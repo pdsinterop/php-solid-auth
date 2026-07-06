@@ -10,7 +10,6 @@ use Pdsinterop\Solid\Auth\Enum\OpenId\OpenIdConnectMetadata as OidcMeta;
 use Pdsinterop\Solid\Auth\Utils\Jwks;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Laminas\Diactoros\Uri;
 
 class Server
 {
@@ -115,18 +114,31 @@ class Server
         return $response;
     }
 
+    private function unparseUrl($parsedUrl): string
+    {
+        $scheme   = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
+        $host     = isset($parsedUrl['host']) ? $parsedUrl['host'] : '';
+        $port     = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+        $user     = isset($parsedUrl['user']) ? $parsedUrl['user'] : '';
+        $pass     = isset($parsedUrl['pass']) ? ':' . $parsedUrl['pass']  : '';
+        $pass     = ($user || $pass) ? "$pass@" : '';
+        $path     = isset($parsedUrl['path']) ? $parsedUrl['path'] : '';
+        $query    = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
+        $fragment = isset($parsedUrl['fragment']) ? '#' . $parsedUrl['fragment'] : '';
+        return "$scheme$user$pass$host$port$path$query$fragment";
+    }
+
     public function addIssuerToResponse($response): Response
     {
         // Adds &iss=... to the response to comply with RFC 9207 
         if ($response->hasHeader("Location")) {
             $location = $response->getHeaderLine('Location');
-            $uri = new Uri($location);
-
-            parse_str($uri->getQuery(), $params);
+            $uri = parse_url($location);
+            parse_str($uri['query'], $params);
             $params['iss'] = $this->config->getServer()->get(OidcMeta::ISSUER);
-
-            $uri = $uri->withQuery(http_build_query($params));
-
+            $newQuery = http_build_query($params);
+            $uri['query'] = http_build_query($params);
+            $uri = $this->unparseUrl($uri);
             $response = $response->withHeader(
                 'Location',
                 (string) $uri
