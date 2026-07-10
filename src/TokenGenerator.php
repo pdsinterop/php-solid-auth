@@ -152,12 +152,16 @@ class TokenGenerator
         */
         $registration_access_token = $this->generateRegistrationAccessToken($registration['client_id'], $privateKey);
 
+        $token_endpoint_auth_method = $registration['token_endpoint_auth_method'] ?? 'client_secret_basic';
+        if (!in_array($token_endpoint_auth_method, ['client_secret_basic', 'none'])) {
+            $token_endpoint_auth_method = 'client_secret_basic';
+        }
         $registrationBase = array(
             'response_types' => array("id_token token"),
             'grant_types' => array("implicit"),
             'application_type' => 'web',
             'id_token_signed_response_alg' => "RS256",
-            'token_endpoint_auth_method' => 'client_secret_basic',
+            'token_endpoint_auth_method' => $token_endpoint_auth_method,
             'registration_access_token' => $registration_access_token,
         );
 
