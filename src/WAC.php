@@ -155,6 +155,7 @@ class WAC {
 		}
 		
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 
@@ -193,6 +194,7 @@ class WAC {
 			return array();
 		}
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
@@ -257,6 +259,7 @@ class WAC {
 			return array();
 		}
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
