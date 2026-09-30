@@ -24,8 +24,8 @@ class WAC {
 	}
 
 	public function addWACHeaders($request, $response, $webId) {
-		$currentFormat = $this->adapter()->getFormat(); // keep the format so we can put it back later. prevents the acl file from being converted;
-		$this->adapter()->setFormat('');
+		$currentFormat = $this->adapter->getFormat(); // keep the format so we can put it back later. prevents the acl file from being converted;
+		$this->adapter->setFormat('');
 		$uri = $request->getUri();
 		$userGrants = $this->getWACGrants($this->getUserGrants($uri, $webId), $uri);
 		$publicGrants = $this->getWACGrants($this->getPublicGrants($uri), $uri);
@@ -40,7 +40,7 @@ class WAC {
 		
 		$response = $response->withAddedHeader("Link", '<.acl>; rel="acl"');
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
-		$this->adapter()->setFormat($currentFormat);
+		$this->adapter->setFormat($currentFormat);
 		return $response;
 	}
 	
