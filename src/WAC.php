@@ -6,11 +6,13 @@ use Pdsinterop\Rdf\Enum\Format as Format;
 
 class WAC {
 	private $filesystem;
+	private $adapter;
 	private $baseUrl;
 	private $basePath;
 
-	public function __construct($filesystem) {
+	public function __construct($filesystem, $adapter) {
 		$this->filesystem = $filesystem;
+		$this->adapter = $adapter;
 		$this->baseUrl = '';
 		$this->basePath = '';
 	}
@@ -22,8 +24,8 @@ class WAC {
 	}
 
 	public function addWACHeaders($request, $response, $webId) {
-		$currentFormat = $this->filesystem->getAdapter()->getFormat(); // keep the format so we can put it back later. prevents the acl file from being converted;
-		$this->filesystem->getAdapter()->setFormat('');
+		$currentFormat = $this->adapter->getFormat(); // keep the format so we can put it back later. prevents the acl file from being converted;
+		$this->adapter->setFormat('');
 		$uri = $request->getUri();
 		$userGrants = $this->getWACGrants($this->getUserGrants($uri, $webId), $uri);
 		$publicGrants = $this->getWACGrants($this->getPublicGrants($uri), $uri);
@@ -38,7 +40,7 @@ class WAC {
 		
 		$response = $response->withAddedHeader("Link", '<.acl>; rel="acl"');
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
-		$this->filesystem->getAdapter()->setFormat($currentFormat);
+		$this->adapter->setFormat($currentFormat);
 		return $response;
 	}
 	
@@ -155,6 +157,7 @@ class WAC {
 		}
 		
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 
@@ -193,6 +196,7 @@ class WAC {
 			return array();
 		}
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
@@ -257,6 +261,7 @@ class WAC {
 			return array();
 		}
 		$acl = $this->filesystem->read($aclPath);
+		$acl .= "\n"; // Fix for sweetrdf not handling files that do not end with a newline
 
 		$graph = new \EasyRdf\Graph();
 		$graph->parse($acl, Format::TURTLE, $this->getAclBase($aclPath));
@@ -307,7 +312,7 @@ class WAC {
 
 		foreach ($aclOptions as $aclPath) {
 			if (
-				$this->filesystem->has($aclPath) && $this->filesystem->read($aclPath) !== false
+				$this->filesystem->fileExists($aclPath) && $this->filesystem->read($aclPath) !== false
 			) {
 				return $aclPath;
 			}
@@ -323,7 +328,7 @@ class WAC {
 	}
 	private function getParentAcl($path) {
 		// error_log("GET PARENT ACL $path");
-		if ($this->filesystem->has($this->normalizePath($path.'/.acl'))) {
+		if ($this->filesystem->fileExists($this->normalizePath($path.'/.acl'))) {
 			// error_log("CHECKING ACL FILE ON $path/.acl");
 			return $this->normalizePath($path . "/.acl");
 		}
@@ -401,7 +406,7 @@ class WAC {
 				);
 			break;
 			case "PUT":
-				if ($this->filesystem->has($path)) {
+				if ($this->filesystem->fileExists($path)) {
 					return array(
 						array(
 							"type" => "resource",
@@ -438,7 +443,7 @@ class WAC {
 			break;
 			case "PATCH";
 				$grants = array();
-				if (!$this->filesystem->has($path)) {
+				if (!$this->filesystem->fileExists($path)) {
 					$grants[] = array(
 						"type" => "parent",
 						"grants" => array(
@@ -465,7 +470,7 @@ class WAC {
 					);
 				}
 				if (strstr($body, "inserts")) {
-					if ($this->filesystem->has($path)) {
+					if ($this->filesystem->fileExists($path)) {
 						$grants[] = array(
 							"type" => "resource",
 							"grants" => array(
@@ -507,7 +512,7 @@ class WAC {
 		$localPath = str_replace($this->basePath, '', $parentPath);
 		if ($localPath == "/") {
 			return $uri->withPath($parentPath);
-		} elseif ($this->filesystem->has($localPath)) {
+		} elseif ($this->filesystem->fileExists($localPath)) {
 			return $uri->withPath($parentPath);
 		} else {
 			return $this->getParentUri($uri->withPath($parentPath));
