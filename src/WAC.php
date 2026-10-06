@@ -512,7 +512,7 @@ class WAC {
 		$localPath = str_replace($this->basePath, '', $parentPath);
 		if ($localPath == "/") {
 			return $uri->withPath($parentPath);
-		} elseif ($this->filesystem->fileExists($localPath)) {
+		} elseif ($this->filesystem->fileExists($localPath) || $this->filesystem->directoryExists($localPath)) {
 			return $uri->withPath($parentPath);
 		} else {
 			return $this->getParentUri($uri->withPath($parentPath));
