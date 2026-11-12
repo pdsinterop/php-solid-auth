@@ -456,37 +456,94 @@ class WAC {
 				$body = $request->getBody()->getContents();
 				$request->getBody()->rewind();
 
-				// FIXME: determine the actual patch types instead of using a string match;
-				if (strstr($body, "deletes")) {
-					$grants[] = array(
+				$resourceGrants = array();
+				$contentType= $request->getHeaderLine("Content-Type");
+				switch($contentType) {
+					case "application/sparql-update":
+					case "application/sparql-update-single-match":
+						// FIXME: determine the actual patch types instead of using a string match;
+						if (stristr($body, "delete data")) {
+							$resourceGrants[] = array(
+								"type" => "resource",
+								"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+							);
+							// To delete a triple from a resource, you need to be able to know that the triple is there.
+							// which requires Read;
+							$resourceGrants[] = array(
+								"type" => "resource",
+								"grants" => array('http://www.w3.org/ns/auth/acl#Read')
+							);
+						}
+						if (stristr($body, "insert data")) {
+							if ($this->filesystem->fileExists($path)) {
+								$resourceGrants[] = array(
+									"type" => "resource",
+									"grants" => array(
+										'http://www.w3.org/ns/auth/acl#Append',
+										'http://www.w3.org/ns/auth/acl#Write'
+									)
+								);
+							} else {
+								$resourceGrants[] = array(
+									"type" => "resource",
+									"grants" => array(
+										'http://www.w3.org/ns/auth/acl#Write'
+									)
+								);
+							}
+						}
+					break;
+					case "text/n3":
+						// FIXME: determine the actual patch types instead of using a string match;
+						if (stristr($body, "deletes")) {
+							$resourceGrants[] = array(
+								"type" => "resource",
+								"grants" => array('http://www.w3.org/ns/auth/acl#Write')
+							);
+							// To delete a triple from a resource, you need to be able to know that the triple is there.
+							// which requires Read;
+							$resourceGrants[] = array(
+								"type" => "resource",
+								"grants" => array('http://www.w3.org/ns/auth/acl#Read')
+							);
+						}
+						if (stristr($body, "inserts")) {
+							if ($this->filesystem->fileExists($path)) {
+								$resourceGrants[] = array(
+									"type" => "resource",
+									"grants" => array(
+										'http://www.w3.org/ns/auth/acl#Append',
+										'http://www.w3.org/ns/auth/acl#Write'
+									)
+								);
+							} else {
+								$resourceGrants[] = array(
+									"type" => "resource",
+									"grants" => array(
+										'http://www.w3.org/ns/auth/acl#Write'
+									)
+								);
+							}
+						}
+					break;
+				}
+
+				if ($resourceGrants === []) {
+					// No grants were set in the check above, so we're not able to determine the minimal set;
+					$resourceGrants[] = array(
 						"type" => "resource",
-						"grants" => array('http://www.w3.org/ns/auth/acl#Write')
-					);
-					// To delete a triple from a resource, you need to be able to know that the triple is there.
-					// which requires Read;
-					$grants[] = array(
-						"type" => "resource",
-						"grants" => array('http://www.w3.org/ns/auth/acl#Read')
+						"grants" => array(
+							'http://www.w3.org/ns/auth/acl#Read',
+							'http://www.w3.org/ns/auth/acl#Write',
+							'http://www.w3.org/ns/auth/acl#Append'
+						)
 					);
 				}
-				if (strstr($body, "inserts")) {
-					if ($this->filesystem->fileExists($path)) {
-						$grants[] = array(
-							"type" => "resource",
-							"grants" => array(
-								'http://www.w3.org/ns/auth/acl#Append',
-								'http://www.w3.org/ns/auth/acl#Write'
-							)
-						);
-					} else {
-						$grants[] = array(
-							"type" => "resource",
-							"grants" => array(
-								'http://www.w3.org/ns/auth/acl#Write'
-							)
-						);
-					}
+				
+				foreach ($resourceGrants as $grant) {
+					$grants[] = $grant;
 				}
+
 				return $grants;
 			break;
 		}
