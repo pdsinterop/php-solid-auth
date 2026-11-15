@@ -38,12 +38,42 @@ class WAC {
 			$wacHeaders[] = "public=\"$publicGrants\"";
 		}
 		
-		$response = $response->withAddedHeader("Link", '<.acl>; rel="acl"');
+		$response = $response->withAddedHeader("Link", '<' . $this->getAclLinkTarget($uri) . '>; rel="acl"');
 		$response = $response->withHeader("WAC-Allow", implode(",", $wacHeaders));
 		$this->adapter->setFormat($currentFormat);
 		return $response;
 	}
 	
+	/**
+	 * Returns the URI reference, relative to the resource, of the ACL resource
+	 * that a client must use to read or change the access to that resource.
+	 *
+	 * Every resource has its own ACL resource, whether it exists yet or not:
+	 * `<.acl>` for a container and `<name.acl>` for any other resource. The
+	 * inherited ACL of an ancestor container must not be advertised here. A
+	 * client resolves the link against the resource URI, so advertising
+	 * `<.acl>` for `/foo/bar.ttl` points it at the ACL of the container
+	 * `/foo/`, and a client that then writes "the ACL of bar.ttl" replaces
+	 * the rules for every resource in that container.
+	 *
+	 * @see https://solidproject.org/TR/wac#acl-resource-discovery
+	 */
+	public function getAclLinkTarget($uri): string {
+		$path = $uri->getPath();
+
+		if ($path === '' || substr($path, -1) === '/') {
+			return '.acl';
+		}
+
+		$name = substr($path, strrpos($path, '/') + 1);
+
+		if (substr($name, -4) === '.acl') {
+			return $name;
+		}
+
+		return $name . '.acl';
+	}
+
 	/**
 	 * Checks the requested filename (path+name) and user (webid) to see if the request
 	 * is allowed to continue, according to the web acl
