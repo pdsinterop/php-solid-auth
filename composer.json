@@ -27,7 +27,7 @@
     "laminas/laminas-diactoros": "^3.8",
     "lcobucci/jwt": "^4.1",
     "league/oauth2-server": "^8.5.5",
-    "web-token/jwt-core": "^2.2"
+    "web-token/jwt-library": "^3.4"
   },
   "require-dev": {
     "ext-xdebug": "*",
